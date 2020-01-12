@@ -13,6 +13,12 @@ wsrep_provider_options="gcache.size=2048M; gcache.keep_pages_size=1024M; gcache.
 #wsrep_sst_method=xtrabackup-v2 # This is set with SST_METHOD env variable
 #wsrep_slave_threads=4
 
+wsrep_gtid_mode=ON
+log_slave_update=1
+log_bin
+wsrep_gtid_domain_id=100
+
+
 #
 # Options for xtrabackup-v2
 #
