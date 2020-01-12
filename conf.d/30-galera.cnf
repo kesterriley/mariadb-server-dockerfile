@@ -1,0 +1,24 @@
+[mysqld]
+bind-address=0.0.0.0
+binlog_format=ROW
+default-storage-engine=innodb
+
+# Best practice for Galera
+innodb_autoinc_lock_mode=2
+innodb_lock_schedule_algorithm=FCFS
+
+# Subsequent `wsrep_provider_options` will replace the ones specified below
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+wsrep_provider_options="gcache.size=2048M; gcache.keep_pages_size=1024M; gcache.recover=yes;"
+#wsrep_sst_method=xtrabackup-v2 # This is set with SST_METHOD env variable
+#wsrep_slave_threads=4
+
+#
+# Options for xtrabackup-v2
+#
+[sst]
+sst-syslog=-1
+progress=/tmp/mysql-console/fifo
+#inno-apply-opts="--use-memory=2G"
+#compressor="pigz --fast --processes 4"
+#decompressor="pigz --decompress"
