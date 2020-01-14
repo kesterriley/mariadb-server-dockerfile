@@ -1,38 +1,84 @@
-FROM mariadb:10.4
+FROM centos:centos7
 
-# Download blocked from http://www.quicklz.com/qpress-11-linux-x64.tar
+RUN groupadd -r mysql && useradd -r -g mysql mysql
+
+#################################################################################
+# PLEASE NOTE YOU MUST HAVE AN ENTERPRISE MARIADB LICENSE FOR THIS INSTALLATION #
+#################################################################################
+
+LABEL maintainer="Kester Riley <kesterriley@hotmail.com>" \
+      description="MariaDB 10.4 Server" \
+      name="mariadb-server" \
+      url="https://mariadb.com/kb/en/mariadb-1040-release-notes/" \
+      architecture="AMD64/x86_64" \
+      version="10.4.01" \
+      date="2020-01-11"
+
 COPY bin/qpress-11-linux-x64.tar /tmp/qpress.tar
 
 RUN set -x \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends --no-install-suggests \
+    && yum update -y \
+    && yum install -y \
+      wget \
       curl \
       netcat \
       pigz \
       pv \
+      iproute \
+      socat \
+      bind-utils \
+      pwgen \
+      psmisc \
+      hostname \
+      epel-release \
     && tar -C /usr/local/bin -xf /tmp/qpress.tar qpress \
     && chmod +x /usr/local/bin/qpress \
-    && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/*
+    && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/* \
+    && mkdir /etc/my.cnf.d 
+
+ENV MARIADB_SERVER_VERSION 10.4
+
+RUN curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --mariadb-server-version="mariadb-$MARIADB_SERVER_VERSION"
+RUN set -x \
+    && yum install -y \
+      MariaDB-server \
+      MariaDB-client \
+      galera-4 \
+      MariaDB-shared \
+      MariaDB-backup \
+    && yum clean all 
 
 
-COPY conf.d/*                /etc/mysql/conf.d/
+COPY conf.d/*                /etc/my.cnf.d/
 COPY *.sh                    /usr/local/bin/
 COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
 COPY primary-component.sql   /
+COPY my.cnf                  /etc/
 
 RUN set -ex ;\
-    # Fix permissions
-    chown -R mysql:mysql /etc/mysql ;\
-    chmod -R go-w /etc/mysql ;\
-    # Remove auth_socket config - already enabled in 10.4 by default
-    rm /etc/mysql/conf.d/31-auth-socket.cnf ;\
-    # Disable code that deletes progress file after SST
-    sed -i 's#-p \$progress#-p \$progress-XXX#' /usr/bin/wsrep_sst_mariabackup
+    chown -R root:root /etc/my.cnf.d ;\
+    chown -R root:root  /etc/my.cnf ; \
+    chmod -R 644 /etc/my.cnf.d ;\
+    chmod -R 644 /etc/my.cnf ;\
+    chown -R mysql:mysql /var/lib/mysql ;\
+    chmod -R 700 /var/lib/mysql ; \
+    rm -rf /var/lib/mysql/* ; \	
+    find /etc/my.cnf.d/ -name '*.cnf' -print0 \
+        | xargs -0 grep -lZE '^(bind-address|log)' \
+        | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/'; 
 
-EXPOSE 3306 4444 4567 4567/udp 4568 8080 8081
 
-HEALTHCHECK CMD /usr/local/bin/healthcheck.sh
+COPY fix-permissions.sh ./
+RUN ./fix-permissions.sh /var/lib/mysql/   && \
+    ./fix-permissions.sh /var/run/
+
+#USER mysql
+
+EXPOSE 3306 3309 4444 4567 4567/udp 4568 8080 8081
+
+HEALTHCHECK --interval=1m --timeout=30s --retries=5 CMD /usr/local/bin/healthcheck.sh
 
 ENV SST_METHOD=mariabackup
 
+STOPSIGNAL SIGTERM
 ENTRYPOINT ["start.sh"]

@@ -25,35 +25,6 @@ if [ "$TRACE" = "y" ]; then
 	set -x
 fi
 
-# Set MariaDB's time zone
-if [[ -n $SKIP_TZINFO ]]; then
-    # We're skipping timezone tables population, so we restrict the
-    # timezone format to numeric.
-    DEFAULT_TIME_ZONE=${DEFAULT_TIME_ZONE:-"+00:00"}
-
-    if [[ $DEFAULT_TIME_ZONE != *":"* ]]; then
-		echo "Timezone '$DEFAULT_TIME_ZONE' cannot be used, because 'SKIP_TZINFO' is set. Falling back to default."
-        DEFAULT_TIME_ZONE="+00:00"
-    fi
-else
-    # If we're populating timezone tables, we are able to use both verbal and
-    # numeric timezone formats: "CET" or "+01:00". The first format is commonly
-    # used with the `TZ` envvar, which can be overriden by a more specific
-    # `DEFAULT_TIME_ZONE`.
-    #
-    # The default value is "+00:00".
-    #
-    if [[ -z $DEFAULT_TIME_ZONE ]]; then
-        if [[ -n $TZ ]]; then
-            DEFAULT_TIME_ZONE=$TZ
-        else
-            DEFAULT_TIME_ZONE="+00:00"
-        fi
-    fi
-fi
-
-# Set data directory permissions for later use of "gosu"
-chown mysql /var/lib/mysql
 
 #
 # Utility modes
@@ -81,9 +52,9 @@ case "$1" in
 		fi
 
 		set +e -m
-		gosu mysql mysqld --console \
+		#gosu mysql mysqld \
+                mysqld \
 			--wsrep-on=OFF \
-			--default-time-zone=$DEFAULT_TIME_ZONE \
 			"$@" 2>&1 &
 		mysql_pid=$!
 
@@ -103,6 +74,7 @@ case "$1" in
 	seed|node)
 		START_MODE=$1
 		shift
+                echo "-------------- STARTING MODE: $START_NODE ---------------------"
 		;;
 	*)
 		echo "sleep|no-galera|bash|seed|node <othernode>,..."
@@ -140,10 +112,6 @@ if [ -f /usr/local/lib/startup.sh ]; then
 fi
 
 MYSQL_MODE_ARGS=""
-
-#
-# Read optional secrets from files
-#
 
 # mode is xtrabackup?
 if [[ $SST_METHOD =~ ^(xtrabackup|mariabackup) ]] ; then
@@ -306,7 +274,7 @@ fi
 #
 case $START_MODE in
 	seed)
-		MYSQL_MODE_ARGS+=" --wsrep-on=ON --wsrep-new-cluster --wsrep-sst-method=$SST_METHOD"
+		MYSQL_MODE_ARGS+=" --wsrep-on=ON --wsrep-new-cluster --wsrep-sst-method=$SST_METHOD "
 		echo "Starting seed node"
 	;;
 	node)
@@ -418,12 +386,12 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
 fi
 
-gosu mysql mysqld.sh --console \
+#gosu mysql mysqld.sh \
+mysqld.sh \
 	$MYSQL_MODE_ARGS \
-	--wsrep_cluster_name=$CLUSTER_NAME \
+        --wsrep_cluster_name=$CLUSTER_NAME \
 	--wsrep_cluster_address=gcomm://$GCOMM \
 	--wsrep_node_address=$NODE_ADDRESS:4567 \
-	--default-time-zone=$DEFAULT_TIME_ZONE \
 	"$@" 2>&1 &
 
 wait $! || true
