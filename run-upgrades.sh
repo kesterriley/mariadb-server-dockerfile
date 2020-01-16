@@ -26,9 +26,9 @@ if [[ -z $old_version ]]; then
 	echo -e "# Created by $0 on $(date)\n# DO NOT DELETE THIS FILE\n$version" > $FLAG
 
 	# Special case for 10.1 users upgrading to 10.2
-	if ! mysql -sNe "SHOW GRANTS FOR 'xtrabackup'@'localhost';" | grep -qF PROCESS; then
-		echo "$0: Granting PROCESS to xtrabackup user for old version."
-		mysql -e "GRANT PROCESS ON *.* TO 'xtrabackup'@'localhost'; FLUSH PRIVILEGES;"
+	if ! mysql -sNe "SHOW GRANTS FOR 'mariabackup'@'localhost';" | grep -qF PROCESS; then
+		echo "$0: Granting PROCESS to mariabackup user for old version."
+		mysql -e "GRANT PROCESS ON *.* TO 'mariabackup'@'localhost'; FLUSH PRIVILEGES;"
 	fi
 fi
 

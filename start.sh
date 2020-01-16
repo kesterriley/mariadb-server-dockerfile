@@ -8,6 +8,7 @@ function err_report () {
 }
 trap 'err_report $LINENO' ERR
 
+
 function shutdown () {
 	echo "Received TERM|INT signal."
 	if [[ -f /var/run/mysqld/mysqld.pid ]] && [[ -n $SYSTEM_PASSWORD ]]; then
@@ -244,9 +245,7 @@ EOF
 
 	if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
 		echo "CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" >> /tmp/bootstrap.sql
-		if [ "$MYSQL_DATABASE" ]; then
-			echo "GRANT ALL ON *.* TO '$MYSQL_USER'@'%' ;" >> /tmp/bootstrap.sql
-		fi
+		echo "GRANT ALL ON *.* TO '$MYSQL_USER'@'%' ;" >> /tmp/bootstrap.sql
 	fi
 	echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
 

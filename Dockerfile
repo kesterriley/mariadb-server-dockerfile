@@ -18,6 +18,7 @@ COPY bin/qpress-11-linux-x64.tar /tmp/qpress.tar
 
 RUN set -x \
     && yum update -y \
+    && yum install -y epel-release \
     && yum install -y \
       wget \
       curl \
@@ -30,7 +31,7 @@ RUN set -x \
       pwgen \
       psmisc \
       hostname \
-      epel-release \
+      which \
     && tar -C /usr/local/bin -xf /tmp/qpress.tar qpress \
     && chmod +x /usr/local/bin/qpress \
     && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/* \
@@ -49,13 +50,13 @@ RUN set -x \
     && yum clean all 
 
 
-COPY conf.d/*                /etc/my.cnf.d/
 COPY *.sh                    /usr/local/bin/
 COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
 COPY primary-component.sql   /
 COPY my.cnf                  /etc/
 
 RUN set -ex ;\
+    mkdir -p /etc/my.cnf.d ;\
     chown -R root:root /etc/my.cnf.d ;\
     chown -R root:root  /etc/my.cnf ; \
     chmod -R 644 /etc/my.cnf.d ;\
