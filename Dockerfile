@@ -2,6 +2,7 @@ FROM centos:centos7
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
+
 #################################################################################
 # PLEASE NOTE YOU MUST HAVE AN ENTERPRISE MARIADB LICENSE FOR THIS INSTALLATION #
 #################################################################################
@@ -35,7 +36,7 @@ RUN set -x \
     && tar -C /usr/local/bin -xf /tmp/qpress.tar qpress \
     && chmod +x /usr/local/bin/qpress \
     && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/* \
-    && mkdir /etc/my.cnf.d 
+    && mkdir /etc/my.cnf.d
 
 ENV MARIADB_SERVER_VERSION 10.4
 
@@ -47,7 +48,7 @@ RUN set -x \
       galera-4 \
       MariaDB-shared \
       MariaDB-backup \
-    && yum clean all 
+    && yum clean all
 
 
 COPY *.sh                    /usr/local/bin/
@@ -61,21 +62,22 @@ RUN set -ex ;\
     chown -R root:root  /etc/my.cnf ; \
     chmod -R 644 /etc/my.cnf.d ;\
     chmod -R 644 /etc/my.cnf ;\
-    chown -R mysql:mysql /var/lib/mysql ;\
-    chmod -R 700 /var/lib/mysql ; \
-    rm -rf /var/lib/mysql/* ; \	
+    sed -i '$d' /etc/passwd ; \
+    rm -rf /var/lib/mysql ; \
+    chmod g=u /etc/passwd ; \
     find /etc/my.cnf.d/ -name '*.cnf' -print0 \
         | xargs -0 grep -lZE '^(bind-address|log)' \
-        | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/'; 
+        | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/';
 
 
 COPY fix-permissions.sh ./
-RUN ./fix-permissions.sh /var/lib/mysql/   && \
+RUN ./fix-permissions.sh /var/lib/   && \
     ./fix-permissions.sh /var/run/
 
-#USER mysql
 
 EXPOSE 3306 3309 4444 4567 4567/udp 4568 8080 8081
+
+USER 100020100
 
 HEALTHCHECK --interval=1m --timeout=30s --retries=5 CMD /usr/local/bin/healthcheck.sh
 

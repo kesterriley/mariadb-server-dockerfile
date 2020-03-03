@@ -1,7 +1,20 @@
 #!/bin/bash
 
-# Exit on errors but report line number
 set -e
+
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "${USER_NAME:-mysql}:x:$(id -u):0:${USER_NAME:-mysql} user:${HOME}:/sbin/nologin" >> /etc/passwd
+  fi
+fi
+
+echo "===> Starting Application"
+
+mkdir -pv /var/lib/mysql
+
+# Exit on errors but report line number
+
+
 function err_report () {
 	echo "start.sh: Trapped error on line $1"
 	exit
@@ -53,8 +66,7 @@ case "$1" in
 		fi
 
 		set +e -m
-		#gosu mysql mysqld \
-                mysqld \
+		mysqld \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
 		mysql_pid=$!
@@ -384,7 +396,7 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
 fi
 
-#gosu mysql mysqld.sh \
+
 mysqld.sh \
 	$MYSQL_MODE_ARGS \
         --wsrep_cluster_name=$CLUSTER_NAME \
