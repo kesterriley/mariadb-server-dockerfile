@@ -58,13 +58,6 @@ function fatal_error {
 	echo "${LOG_MESSAGE} Refusing to start since something is seriously wrong.."
 	echo "${LOG_MESSAGE} Touch /var/lib/mysql/new-cluster to force a node to start a new cluster."
 	echo "${LOG_MESSAGE} "
-	echo "${LOG_MESSAGE}       VvVvVv         "
-	echo "${LOG_MESSAGE}       |-  -|    //   "
-	echo "${LOG_MESSAGE}  <----|O  O|---<<<   "
-	echo "${LOG_MESSAGE}       |  D |    \\\\ "
-	echo "${LOG_MESSAGE}       | () |         "
-	echo "${LOG_MESSAGE}        \\__/         "
-	echo "${LOG_MESSAGE} "
 	rm -f /var/lib/mysql/auto-recovery.flag
 	exit 1
 }
@@ -106,6 +99,10 @@ else
 		SAFE_TO_BOOTSTRAP=$(awk '/^safe_to_bootstrap:/{print $2}' /var/lib/mysql/grastate.dat)
 		if [ "$seqno" = "-1" ]; then
 			echo "${LOG_MESSAGE} uuid is known but seqno is not..."
+			echo "${LOG_MESSAGE} If your cluster has crashed on more than one node you will need to identify the"
+			echo "${LOG_MESSAGE} node with a sequence number, connect to this node and execute the following:"
+			echo "${LOG_MESSAGE} MariaDB [(none)]> set global wsrep_provider_options=\"pc.bootstrap=YES\";"
+			echo "${LOG_MESSAGE} You will then need to restart each failed node, one at a time."
 		elif [ -n "$uuid" ] && [ -n "$seqno" ]; then
 			POSITION="$uuid:$seqno"
 			echo "${LOG_MESSAGE} Recovered position from grastate.dat: $POSITION"
@@ -357,4 +354,3 @@ fi
 echo "${LOG_MESSAGE} ---------------------------------------------------------------"
 echo "${LOG_MESSAGE} Starting with options: $OPT $START"
 exec mysqld $OPT $START
-

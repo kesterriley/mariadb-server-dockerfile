@@ -124,7 +124,7 @@ if [ -f /usr/local/lib/startup.sh ]; then
 	source /usr/local/lib/startup.sh "$@"
 fi
 
-MYSQL_MODE_ARGS=""
+MARIADB_MODE_ARGS=""
 
 if [[ $SST_METHOD =~ ^(mariabackup) ]] ; then
   MARIABACKUP_PASSWORD_FILE=${MARIABACKUP_PASSWORD_FILE:-/run/secrets/xtrabackup_password}
@@ -132,7 +132,7 @@ if [[ $SST_METHOD =~ ^(mariabackup) ]] ; then
 	MARIABACKUP_PASSWORD=$(cat $MARIABACKUP_PASSWORD_FILE)
   fi
   [ -z "$MARIABACKUP_PASSWORD" ] && echo "WARNING: MARIABACKUP_PASSWORD is empty"
-  MYSQL_MODE_ARGS+=" --wsrep_sst_auth=$MARIABACKUP_USER:$MARIABACKUP_PASSWORD"
+  MARIADB_MODE_ARGS+=" --wsrep_sst_auth=$MARIABACKUP_USER:$MARIABACKUP_PASSWORD"
 fi
 
 SYSTEM_PASSWORD_FILE=${SYSTEM_PASSWORD_FILE:-/run/secrets/system_password}
@@ -161,12 +161,12 @@ if [[ -f /var/lib/mysql/hold-start ]]; then
 fi
 
 # Allow "node" to be "seed" if "new-cluster" file is present
-# In this case the MYSQL_ROOT_PASSWORD may be specified within the file
+# In this case the MARIADB_ROOT_PASSWORD may be specified within the file
 if [[ $START_MODE = "node" ]] && [[ -f /var/lib/mysql/new-cluster ]]; then
 	START_MODE=seed
 	shift # get rid of node argument
 	if [[ -s /var/lib/mysql/new-cluster ]]; then
-		MYSQL_ROOT_PASSWORD="$(cat /var/lib/mysql/new-cluster)"
+		MARIADB_ROOT_PASSWORD="$(cat /var/lib/mysql/new-cluster)"
 	fi
 	rm -f /var/lib/mysql/new-cluster
 fi
@@ -176,47 +176,47 @@ if   ( [ "$START_MODE" = "node" ] && [ -f /var/lib/mysql/force-cluster-bootstrap
   || ( [ "$START_MODE" = "seed" ] && ! [ -f /var/lib/mysql/skip-cluster-bootstrapping ] )
 then
 	echo "Generating cluster bootstrap script..."
-	MYSQL_ROOT_PASSWORD_FILE=${MYSQL_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
-	MYSQL_ROOT_HOST_FILE=${MYSQL_ROOT_HOST_FILE:-/run/secrets/mysql_root_host}
-	MYSQL_PASSWORD_FILE=${MYSQL_PASSWORD_FILE:-/run/secrets/mysql_password}
-	MYSQL_DATABASE_FILE=${MYSQL_DATABASE_FILE:-/run/secrets/mysql_database}
-	if [ -z $MYSQL_ROOT_PASSWORD ] && [ -f $MYSQL_ROOT_PASSWORD_FILE ]; then
-		MYSQL_ROOT_PASSWORD=$(cat $MYSQL_ROOT_PASSWORD_FILE)
+	MARIADB_ROOT_PASSWORD_FILE=${MARIADB_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
+	MARIADB_ROOT_HOST_FILE=${MARIADB_ROOT_HOST_FILE:-/run/secrets/mysql_root_host}
+	MARIADB_PASSWORD_FILE=${MARIADB_PASSWORD_FILE:-/run/secrets/mysql_password}
+	MARIADB_DATABASE_FILE=${MARIADB_DATABASE_FILE:-/run/secrets/MARIADB_DATABASE}
+	if [ -z $MARIADB_ROOT_PASSWORD ] && [ -f $MARIADB_ROOT_PASSWORD_FILE ]; then
+		MARIADB_ROOT_PASSWORD=$(cat $MARIADB_ROOT_PASSWORD_FILE)
 	fi
-	if [ -z $MYSQL_ROOT_HOST ] && [ -f $MYSQL_ROOT_HOST_FILE ]; then
-		MYSQL_ROOT_HOST=$(cat $MYSQL_ROOT_HOST_FILE)
+	if [ -z $MARIADB_ROOT_HOST ] && [ -f $MARIADB_ROOT_HOST_FILE ]; then
+		MARIADB_ROOT_HOST=$(cat $MARIADB_ROOT_HOST_FILE)
 	fi
-	if [ -z $MYSQL_PASSWORD ] && [ -f $MYSQL_PASSWORD_FILE ]; then
-		MYSQL_PASSWORD=$(cat $MYSQL_PASSWORD_FILE)
+	if [ -z $MARIADB_PASSWORD ] && [ -f $MARIADB_PASSWORD_FILE ]; then
+		MARIADB_PASSWORD=$(cat $MARIADB_PASSWORD_FILE)
 	fi
-	if [ -z $MYSQL_DATABASE ] && [ -f $MYSQL_DATABASE_FILE ]; then
-		MYSQL_DATABASE=$(cat $MYSQL_DATABASE_FILE)
+	if [ -z $MARIADB_DATABASE ] && [ -f $MARIADB_DATABASE_FILE ]; then
+		MARIADB_DATABASE=$(cat $MARIADB_DATABASE_FILE)
 	fi
-	if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
-		MYSQL_ROOT_PASSWORD=$(head -c 32 /dev/urandom | base64 | head -c 32)
-		echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
+	if [ -z "$MARIADB_ROOT_PASSWORD" ]; then
+		MARIADB_ROOT_PASSWORD=$(head -c 32 /dev/urandom | base64 | head -c 32)
+		echo "MARIADB_ROOT_PASSWORD=$MARIADB_ROOT_PASSWORD"
 	fi
-	if [ -z "$MYSQL_ROOT_HOST" ]; then
-		MYSQL_ROOT_HOST='127.0.0.1'
+	if [ -z "$MARIADB_ROOT_HOST" ]; then
+		MARIADB_ROOT_HOST='127.0.0.1'
 	fi
 
 	>/tmp/bootstrap.sql
 
 	# Create 'root' user
 	cat >> /tmp/bootstrap.sql <<EOF
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'${MYSQL_ROOT_HOST}' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'${MARIADB_ROOT_HOST}' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
 EOF
-	if [ "$MYSQL_ROOT_SOCKET_AUTH" != "0" ]; then
+	if [ "$MARIADB_ROOT_SOCKET_AUTH" != "0" ]; then
 		cat >> /tmp/bootstrap.sql <<EOF
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;
 EOF
 	else
 		cat >> /tmp/bootstrap.sql <<EOF
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
 EOF
 	fi
 
-	# Create 'system' user for healthchecks and shutdown signal
+	# Create a 'maxscale' and 'system' user for healthchecks and shutdown signal
 	cat >> /tmp/bootstrap.sql <<EOF
 CREATE USER '$MAXSCALE_USER'@'%' IDENTIFIED BY '$MAXSCALE_USER_PASSWORD';
 GRANT SELECT ON mysql.user TO '$MAXSCALE_USER'@'%';
@@ -251,13 +251,13 @@ EOF
 	fi
 
 	# Create user's database and user
-	if [ "$MYSQL_DATABASE" ]; then
-		echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;" >> /tmp/bootstrap.sql
+	if [ "$MARIADB_DATABASE" ]; then
+		echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` ;" >> /tmp/bootstrap.sql
 	fi
 
-	if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
-		echo "CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" >> /tmp/bootstrap.sql
-		echo "GRANT ALL ON *.* TO '$MYSQL_USER'@'%' ;" >> /tmp/bootstrap.sql
+	if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
+		echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ;" >> /tmp/bootstrap.sql
+		echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
 	fi
 	echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
 
@@ -272,7 +272,7 @@ EOF
                 echo
         done
 
-	MYSQL_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
+	MARIADB_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
 	rm -f /var/lib/mysql/force-cluster-bootstrapping
 	touch /var/lib/mysql/skip-cluster-bootstrapping
 fi
@@ -284,7 +284,7 @@ fi
 #
 case $START_MODE in
 	seed)
-		MYSQL_MODE_ARGS+=" --wsrep-on=ON --wsrep-new-cluster --wsrep-sst-method=$SST_METHOD "
+		MARIADB_MODE_ARGS+=" --wsrep-on=ON --wsrep-new-cluster --wsrep-sst-method=$SST_METHOD "
 		echo "Starting seed node"
 	;;
 	node)
@@ -294,7 +294,7 @@ case $START_MODE in
 			echo "List of nodes addresses/hostnames required"
 			exit 1
 		fi
-		MYSQL_MODE_ARGS+=" --wsrep-on=ON --wsrep-sst-method=$SST_METHOD"
+		MARIADB_MODE_ARGS+=" --wsrep-on=ON --wsrep-sst-method=$SST_METHOD"
 		RESOLVE=0
 		SLEEPS=0
 
@@ -302,7 +302,7 @@ case $START_MODE in
 		while true; do
 			# Allow user to touch flag file during startup
 			if [[ -f /var/lib/mysql/new-cluster ]]; then
-				MYSQL_MODE_ARGS+=" --wsrep-new-cluster"
+				MARIADB_MODE_ARGS+=" --wsrep-new-cluster"
 				echo "Found 'new-cluster' flag file. Starting new cluster."
 				rm -f /var/lib/mysql/new-cluster
 				break
@@ -398,7 +398,7 @@ fi
 
 
 mysqld.sh \
-	$MYSQL_MODE_ARGS \
+	$MARIADB_MODE_ARGS \
         --wsrep_cluster_name=$CLUSTER_NAME \
 	--wsrep_cluster_address=gcomm://$GCOMM \
 	--wsrep_node_address=$NODE_ADDRESS:4567 \
