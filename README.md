@@ -1,3 +1,5 @@
-docker build --rm -t mdb-test-10-4-server .
 
-docker tag c2517f49b826 kesterriley/mdb-test-10-4-server:latest; docker push kesterriley/mdb-test-10-4-server:latest
+
+kesterriley/mdb-test-10-4-MaxScale
+
+This docker file is built and pushed to dockerhub via circleci on commit.
