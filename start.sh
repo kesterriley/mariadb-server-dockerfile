@@ -24,7 +24,7 @@ trap 'err_report $LINENO' ERR
 
 function shutdown () {
 	echo "Received TERM|INT signal."
-	if [[ -f /var/run/mysqld/mysqld.pid ]] && [[ -n $SYSTEM_PASSWORD ]]; then
+	if [[ -f /var/lib/mysql/*.pid ]] && [[ -n $SYSTEM_PASSWORD ]]; then
 		echo "Shutting down..."
 		mysql -u system -h 127.0.0.1 -p$SYSTEM_PASSWORD -e 'SHUTDOWN'
 		# Since this is docker, expect that if we don't shut down quickly enough we will get killed anyway
@@ -87,7 +87,7 @@ case "$1" in
 	seed|node)
 		START_MODE=$1
 		shift
-                echo "-------------- STARTING MODE: $START_NODE ---------------------"
+                echo "-------------- STARTING MODE: $START_MODE ---------------------"
 		;;
 	*)
 		echo "sleep|no-galera|bash|seed|node <othernode>,..."
