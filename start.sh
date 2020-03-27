@@ -382,6 +382,7 @@ tail_pid=$!
 
 # Port 8080 only reports healthy when ready to serve clients
 # Use this one for load balancer health checks
+echo "STARTING HEALTHCHECK ON PORT 8080"
 galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-port=8080 \
 	-availWhenDonor=false \
@@ -390,12 +391,13 @@ galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 
 # Port 8081 reports healthy as long as the server is synced or donor/desynced state
 # Use this one to help other nodes determine cluster state before launching server
+echo "STARTING HEALTHCHECK ON PORT 8081"
 galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-port=8081 \
 	-availWhenDonor=true \
 	-availWhenReadOnly=true \
 	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
-
+echo "STARTED HEALTH CHECKS"
 # Run automated upgrades
 if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
