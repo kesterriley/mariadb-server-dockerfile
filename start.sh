@@ -28,7 +28,8 @@ function shutdown () {
 		echo "Shutting down..."
 		#mariadb -u system -h 127.0.0.1 -p$SYSTEM_PASSWORD -e 'SHUTDOWN'
     mysqladmin -usystem -h127.0.0.1 -p$SYSTEM_PASSWORD --wait-for-all-slaves shutdown
-    sleep 30
+    echo "Sleeping to allow shutdown to complete..."
+    sleep 20
 		# Since this is docker, expect that if we don't shut down quickly enough we will get killed anyway
 	else
 		exit
@@ -382,7 +383,7 @@ tail_pid=$!
 
 # Port 8080 only reports healthy when ready to serve clients
 # Use this one for load balancer health checks
-echo "STARTING HEALTHCHECK ON PORT 8080"
+echo "STARTING HEALTH CHECK ON PORT 8080"
 galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-port=8080 \
 	-availWhenDonor=false \
@@ -391,7 +392,7 @@ galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 
 # Port 8081 reports healthy as long as the server is synced or donor/desynced state
 # Use this one to help other nodes determine cluster state before launching server
-echo "STARTING HEALTHCHECK ON PORT 8081"
+echo "STARTING HEALTH CHECK ON PORT 8081"
 galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-port=8081 \
 	-availWhenDonor=true \

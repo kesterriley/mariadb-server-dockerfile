@@ -4,8 +4,6 @@
 # or create a new one if the old one cannot be joined
 #
 
-set -x
-
 LOG_MESSAGE="===|mysqld.sh|===:"
 OPT="$@"
 HEAD_START=15
