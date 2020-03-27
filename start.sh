@@ -331,9 +331,12 @@ case $START_MODE in
 			# It is possible that containers on other nodes aren't running yet and should be waited on
 			# before trying to start. For example, this occurs when updated container images are being pulled
 			# by `docker service update <service>` or on a full cluster power loss
+
+echo "DEBUG: $GCOMM : $NODE_ADDRESS"
+
 			COUNT=$(echo "$GCOMM" | tr ',' "\n" | sort -u | grep -v -e "^$NODE_ADDRESS\$" -e '^$' | wc -l)
 			if [ $RESOLVE -eq 1 ] && [ $COUNT -lt $(($GCOMM_MINIMUM - 1)) ]; then
-
+echo "DEBUG: $RESOLVE : $COUNT : $GCOMM_MINIMUM : $HEALTHY_WHILE_BOOTING"
 				# Bypass healthcheck so we can keep waiting for other nodes to appear
 				if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
 					touch /var/lib/mysql/pre-boot.flag
