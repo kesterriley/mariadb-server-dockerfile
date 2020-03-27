@@ -8,7 +8,7 @@ while true; do
 	sleep 10
 done
 
-version=$(mysql -sNe "SELECT VERSION();")
+version=$(mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -sNe "SELECT VERSION();")
 if [[ -z $version ]]; then
 	echo "$0: _-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^_"
 	echo "$0: = Could not login as root to determine MySQL version and run upgrades! ="
@@ -27,9 +27,9 @@ if [[ -z $old_version ]]; then
 
 	# Special case for 10.1 users upgrading to 10.2
   echo "run-upgrades.sh Before Checking Grants"
-	if ! mysql -sNe "SHOW GRANTS FOR 'mariabackup'@'localhost';" | grep -qF PROCESS; then
+	if ! mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -sNe "SHOW GRANTS FOR 'mariabackup'@'localhost';" | grep -qF PROCESS; then
 		echo "$0: Granting PROCESS to mariabackup user for old version."
-		mysql -e "GRANT PROCESS ON *.* TO 'mariabackup'@'localhost'; FLUSH PRIVILEGES;"
+		mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -e "GRANT PROCESS ON *.* TO 'mariabackup'@'localhost'; FLUSH PRIVILEGES;"
 		echo "run-upgrades.sh After Applying Grants"
 	fi
 fi
@@ -38,5 +38,5 @@ if [[ -n $old_version ]] && [[ $version != $old_version ]]; then
 	echo -e "# Created by $0 on $(date)\n# DO NOT DELETE THIS FILE\n$version" > $FLAG
 	echo "$0: Detected old version ($old_version -> $version)"
 	echo "$0: Running mysql_upgrade..."
-	mysql_upgrade
+	mysql_upgrade -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1
 fi
