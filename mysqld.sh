@@ -179,6 +179,8 @@ else
 		if [[ -n $VIEW_ID ]]; then
 			echo "view:$NODE_ADDRESS:$VIEW_ID" >> $tmpfile
 		fi
+echo "SCOAT DEBUG: $LISTEN_PORT:$NODE_ADDRESS:$tmpfile"
+
 		socat -u TCP-LISTEN:$LISTEN_PORT,bind=$NODE_ADDRESS,fork OPEN:$tmpfile,append &
 		PID_SERVER=$!
 
