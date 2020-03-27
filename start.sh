@@ -26,7 +26,9 @@ function shutdown () {
 	echo "Received TERM|INT signal."
 	if [[ -f /var/lib/mysql/`hostname`.pid ]] && [[ -n $SYSTEM_PASSWORD ]]; then
 		echo "Shutting down..."
-		mariadb -u system -h 127.0.0.1 -p$SYSTEM_PASSWORD -e 'SHUTDOWN'
+		#mariadb -u system -h 127.0.0.1 -p$SYSTEM_PASSWORD -e 'SHUTDOWN'
+    mysqladmin -usystem -h127.0.0.1 -p$SYSTEM_PASSWORD shutdown
+    SLEEP 30
 		# Since this is docker, expect that if we don't shut down quickly enough we will get killed anyway
 	else
 		exit
@@ -332,11 +334,11 @@ case $START_MODE in
 			# before trying to start. For example, this occurs when updated container images are being pulled
 			# by `docker service update <service>` or on a full cluster power loss
 
-echo "DEBUG: $GCOMM : $NODE_ADDRESS"
+echo "DEBUG a: $GCOMM : $NODE_ADDRESS"
 
 			COUNT=$(echo "$GCOMM" | tr ',' "\n" | sort -u | grep -v -e "^$NODE_ADDRESS\$" -e '^$' | wc -l)
 			if [ $RESOLVE -eq 1 ] && [ $COUNT -lt $(($GCOMM_MINIMUM - 1)) ]; then
-echo "DEBUG: $RESOLVE : $COUNT : $GCOMM_MINIMUM : $HEALTHY_WHILE_BOOTING"
+echo "DEBUG b: $RESOLVE : $COUNT : $GCOMM_MINIMUM : $HEALTHY_WHILE_BOOTING"
 				# Bypass healthcheck so we can keep waiting for other nodes to appear
 				if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
 					touch /var/lib/mysql/pre-boot.flag
