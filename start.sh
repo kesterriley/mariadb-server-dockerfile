@@ -301,6 +301,7 @@ case $START_MODE in
 		RESOLVE=0
 		SLEEPS=0
 
+    echo "DEBUG list of Addresses: $ADDRS"
 		# Begin service discovery of other node addresses
 		while true; do
 			# Allow user to touch flag file during startup
@@ -335,7 +336,7 @@ case $START_MODE in
 			# before trying to start. For example, this occurs when updated container images are being pulled
 			# by `docker service update <service>` or on a full cluster power loss
 
-echo "DEBUG a: $GCOMM : $NODE_ADDRESS"
+echo "DEBUG GCOMM: $GCOMM : ADDRESS: $NODE_ADDRESS"
 
 			COUNT=$(echo "$GCOMM" | tr ',' "\n" | sort -u | grep -v -e "^$NODE_ADDRESS\$" -e '^$' | wc -l)
 			if [ $RESOLVE -eq 1 ] && [ $COUNT -lt $(($GCOMM_MINIMUM - 1)) ]; then
