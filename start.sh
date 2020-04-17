@@ -168,10 +168,8 @@ fi
 if [[ $START_MODE = "node" ]] && [[ -f /var/lib/mysql/new-cluster ]]; then
 	START_MODE=seed
 	shift # get rid of node argument
-	if [[ -s /var/lib/mysql/new-cluster ]]; then
-		MARIADB_ROOT_PASSWORD="$(cat /var/lib/mysql/new-cluster)"
-	fi
 	rm -f /var/lib/mysql/new-cluster
+  echo "This server was bootstrapped as the new cluster" > /tmp/bootstrap.log
 fi
 
 # Generate init file to create required users
