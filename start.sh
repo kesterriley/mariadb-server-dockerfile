@@ -71,7 +71,7 @@ case "$1" in
 		fi
 
 		set +e -m
-		mysqld \
+		mariadbd \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
 		mysql_pid=$!
@@ -304,7 +304,6 @@ case $START_MODE in
 		RESOLVE=0
 		SLEEPS=0
 
-    echo "DEBUG list of Addresses: $ADDRS"
 		# Begin service discovery of other node addresses
 		while true; do
 			# Allow user to touch flag file during startup
@@ -339,11 +338,8 @@ case $START_MODE in
 			# before trying to start. For example, this occurs when updated container images are being pulled
 			# by `docker service update <service>` or on a full cluster power loss
 
-echo "DEBUG GCOMM: $GCOMM : ADDRESS: $NODE_ADDRESS"
-
 			COUNT=$(echo "$GCOMM" | tr ',' "\n" | sort -u | grep -v -e "^$NODE_ADDRESS\$" -e '^$' | wc -l)
 			if [ $RESOLVE -eq 1 ] && [ $COUNT -lt $(($GCOMM_MINIMUM - 1)) ]; then
-echo "DEBUG b: $RESOLVE : $COUNT : $GCOMM_MINIMUM : $HEALTHY_WHILE_BOOTING"
 				# Bypass healthcheck so we can keep waiting for other nodes to appear
 				if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
 					touch /var/lib/mysql/pre-boot.flag
@@ -409,7 +405,7 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 fi
 
 
-mysqld.sh \
+mariadb_control.sh \
 	$MARIADB_MODE_ARGS \
         --wsrep_cluster_name=$CLUSTER_NAME \
 	--wsrep_cluster_address=gcomm://$GCOMM \

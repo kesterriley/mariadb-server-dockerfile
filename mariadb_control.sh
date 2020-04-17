@@ -1,13 +1,8 @@
 #!/bin/bash
-#
-# This script tries to start mysqld with the right parameters to join an existing cluster
-# or create a new one if the old one cannot be joined
-#
 
-LOG_MESSAGE="===|mysqld.sh|===:"
+LOG_MESSAGE="===|mariadb_control.sh|===:"
 OPT="$@"
 HEAD_START=15
-
 
 function do_install_db {
 	if ! test -d /var/lib/mysql/mysql; then
@@ -20,7 +15,7 @@ function do_install_db {
 		# Start temporary server with no networking for loading tzinfo
 		if [[ -n $SKIP_TZINFO ]]; then return 0; fi
 		echo "${LOG_MESSAGE} Loading timezone info..."
-		mysqld --skip-networking --skip-grant-tables --socket=/tmp/mysql.sock &
+		mariadbd --skip-networking --skip-grant-tables --socket=/tmp/mysql.sock &
 		local pid=$!
 		sleep 3
 		mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql --protocol=socket -uroot -hlocalhost --socket=/tmp/mysql.sock mysql
@@ -120,7 +115,7 @@ else
 		echo "${LOG_MESSAGE} Attempting to recover GTID positon..."
 
 		tmpfile=$(mktemp -t wsrep_recover.XXXXXX)
-		mysqld  --wsrep-on=ON \
+		mariadbd  --wsrep-on=ON \
 				--wsrep_sst_method=skip \
 				--wsrep_cluster_address=gcomm:// \
 				--skip-networking \
@@ -352,7 +347,7 @@ if [[ $LISTEN_WHEN_HEALTHY -gt 0 ]]; then
 	done &
 fi
 
-# Start mysqld
+# Start mariadbd
 echo "${LOG_MESSAGE} ---------------------------------------------------------------"
 echo "${LOG_MESSAGE} Starting with options: $OPT $START"
-exec mysqld $OPT $START
+exec mariadbd $OPT $START
