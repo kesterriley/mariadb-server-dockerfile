@@ -164,7 +164,6 @@ if [[ -f /var/lib/mysql/hold-start ]]; then
 fi
 
 # Allow "node" to be "seed" if "new-cluster" file is present
-# In this case the MARIADB_ROOT_PASSWORD may be specified within the file
 if [[ $START_MODE = "node" ]] && [[ -f /var/lib/mysql/new-cluster ]]; then
   if [[ -f /var/lib/mysql/grastate.dat ]]; then
       echo "This server is already in a cluster, ignoring bootstrap" > /tmp/bootstrap.log
