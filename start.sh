@@ -29,11 +29,10 @@ function shutdown () {
     mysqladmin -usystem -h127.0.0.1 -p$SYSTEM_PASSWORD --wait-for-all-slaves shutdown
     while [  -f /var/lib/mysql/`hostname`.pid ]
     do
-       sleep 1
+       sleep 2
        echo "Sleeping to allow shutdown to complete..."
     done
     echo "Process shutdown"
-    sleep 20
 	else
 		exit
 	fi
