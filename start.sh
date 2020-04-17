@@ -165,7 +165,7 @@ fi
 
 # Allow "node" to be "seed" if "new-cluster" file is present
 # In this case the MARIADB_ROOT_PASSWORD may be specified within the file
-if [[ $START_MODE = "node" ]] && [[ -f /var/lib/mysql/new-cluster ]]; then
+if [[ $START_MODE = "node" ]] && [[ -f /var/lib/mysql/new-cluster ]] && [[ ! -f /var/lib/mysql/grastate.dat]]; then
 	START_MODE=seed
 	shift # get rid of node argument
 	rm -f /var/lib/mysql/new-cluster
