@@ -68,17 +68,15 @@ then
 	echo "${LOG_MESSAGE} Starting a new cluster..."
 	do_install_db
 	prepare_bootstrap
-elif [[ "$OPT" =~ --wsrep-on=OFF ]]; then
-	#This variable is used on a standalone DB
-	echo "Detected Standalone Installation"
-	ls -lrth /var/lib/mysql/
-	exit
 elif ! test -f /var/lib/mysql/ibdata1
 then
 	# Skip recovery on empty data directory
 	echo "${LOG_MESSAGE} No ibdata1 found, starting a fresh node..."
 	do_install_db
-
+elif [[ "$OPT" =~ --wsrep-on=OFF ]]; then
+	#This variable is used on a standalone DB
+	echo "Detected Standalone Installation"
+	echo "Not Configuring Cluster"
 else
 	# Try to recover state from grastate.dat or logfile
 	if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
@@ -176,7 +174,6 @@ else
 		if [[ -n $VIEW_ID ]]; then
 			echo "view:$NODE_ADDRESS:$VIEW_ID" >> $tmpfile
 		fi
-echo "SCOAT DEBUG: $LISTEN_PORT:$NODE_ADDRESS:$tmpfile"
 
 		socat -u TCP-LISTEN:$LISTEN_PORT,bind=$NODE_ADDRESS,fork OPEN:$tmpfile,append &
 		PID_SERVER=$!
@@ -341,7 +338,7 @@ fi
 
 # Support "truly healthy" healthchecks by listening on a new port (forwarded to the main healthcheck)
 # We support TCP and HTTP healthchecks by not listening until the main healthcheck reports healthy status
-if [[ $LISTEN_WHEN_HEALTHY -gt 0 ]]; then
+if [[ $LISTEN_WHEN_HEALTHY -gt 0 ]] && ! [[ "$OPT" =~ --wsrep-on=OFF ]]; then
 	while true; do
 		if curl -sSf -o /dev/null localhost:8080 2>/dev/null; then
 			socat TCP4-LISTEN:$LISTEN_WHEN_HEALTHY,fork TCP4:localhost:8080 &
