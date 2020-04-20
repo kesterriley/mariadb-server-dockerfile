@@ -177,6 +177,7 @@ case "$1" in
 
 		set +e -m
     mariadb_control.sh \
+     	$MARIADB_MODE_ARGS \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
 
