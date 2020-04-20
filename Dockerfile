@@ -23,7 +23,7 @@ RUN set -x \
     && yum install -y \
       wget \
       curl \
-      ncat \
+      nmap \
       pigz \
       pv \
       iproute \
