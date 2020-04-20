@@ -44,6 +44,23 @@ if [ "$TRACE" = "y" ]; then
 	set -x
 fi
 
+funtion startProcess () {
+  # start processes
+  set +e -m
+
+  # Allow external processes to write to docker logs (wsrep_notify_cmd)
+  # Place it in a directory that is not writeable by mysql to prevent SST script from deleting it
+  fifo=/tmp/mysql-console/fifo
+  rm -rf $(dirname $fifo) \
+    && mkdir -p $(dirname $fifo) \
+    && chmod 755 $(dirname $fifo) \
+    && mkfifo $fifo \
+    && chmod o+rw $fifo \
+    && echo "Tailing $fifo..." \
+    && tail -f $fifo &
+  tail_pid=$!
+}
+
 function create_db_users () {
   echo "Generating bootstrap script..."
   MARIADB_ROOT_PASSWORD_FILE=${MARIADB_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
@@ -174,7 +191,7 @@ case "$1" in
 		fi
 
     create_db_users
-
+    startProcess
 		set +e -m
     mariadb_control.sh \
      	$MARIADB_MODE_ARGS \
@@ -377,20 +394,7 @@ case $START_MODE in
 esac
 
 
-# start processes
-set +e -m
-
-# Allow external processes to write to docker logs (wsrep_notify_cmd)
-# Place it in a directory that is not writeable by mysql to prevent SST script from deleting it
-fifo=/tmp/mysql-console/fifo
-rm -rf $(dirname $fifo) \
-  && mkdir -p $(dirname $fifo) \
-  && chmod 755 $(dirname $fifo) \
-  && mkfifo $fifo \
-  && chmod o+rw $fifo \
-  && echo "Tailing $fifo..." \
-  && tail -f $fifo &
-tail_pid=$!
+startProcess
 
 # Port 8080 only reports healthy when ready to serve clients
 # Use this one for load balancer health checks
