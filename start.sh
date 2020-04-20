@@ -56,32 +56,36 @@ case "$1" in
 		exit
 		;;
 	no-galera)
-		echo "Starting with Galera disabled"
+		echo "Starting standalone instance"
 		shift 1
 
 		# Allow for easily adding more startup scripts
 		if [ -f /usr/local/lib/startup.sh ]; then
 			source /usr/local/lib/startup.sh "$@"
+    else
+      echo "There are no additional startup scripts to run"
 		fi
 
 		# Allow for scripts above to create a one-time use init-file
 		if [ -f /var/lib/mysql/init-file.sql ]; then
 			mv /var/lib/mysql/init-file.sql /tmp/init-file.sql
 			set -- "$@" --init-file=/tmp/init-file.sql
+    else
+      echo "There are no init scripts to run"
 		fi
 
 		set +e -m
 		mariadbd \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
-		mysql_pid=$!
-
+		mariadb_pid=$!
+    echo "Started MariaDB"
 		# Start fake healthcheck
 		if [[ -n $FAKE_HEALTHCHECK ]]; then
 			no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
 		fi
-
-		wait $mysql_pid || true
+    echo "Started healthcheck"
+		wait $mariadb_pid || true
 		exit
 		;;
 	bash)
