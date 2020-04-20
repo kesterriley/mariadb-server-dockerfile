@@ -102,8 +102,7 @@ GRANT SUPER, RELOAD on *.* to '$MAXSCALE_MONITOR_USER'@'%';
 
 CREATE USER IF NOT EXISTS 'system'@'127.0.0.1' IDENTIFIED BY '$SYSTEM_PASSWORD';
 GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'127.0.0.1';
-CREATE USER IF NOT EXISTS 'system'@'localhost' IDENTIFIED BY '$SYSTEM_PASSWORD';
-GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'localhost';
+
 EOF
 
   # Create mariabackup user if needed
@@ -178,7 +177,6 @@ case "$1" in
 
 		set +e -m
     mariadb_control.sh \
-     	$MARIADB_MODE_ARGS \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
 
