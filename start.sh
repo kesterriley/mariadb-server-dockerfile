@@ -44,7 +44,7 @@ if [ "$TRACE" = "y" ]; then
 	set -x
 fi
 
-funtion startProcess () {
+function startProcess () {
   # start processes
   set +e -m
 
