@@ -68,7 +68,11 @@ then
 	echo "${LOG_MESSAGE} Starting a new cluster..."
 	do_install_db
 	prepare_bootstrap
-
+elif [[ "$OPT" =~ --wsrep-on=OFF ]]; then
+	#This variable is used on a standalone DB
+	echo "Detected Standalone Installation"
+	ls -lrth /var/lib/mysql/
+	exit
 elif ! test -f /var/lib/mysql/ibdata1
 then
 	# Skip recovery on empty data directory
