@@ -44,6 +44,106 @@ if [ "$TRACE" = "y" ]; then
 	set -x
 fi
 
+function create_db_users () {
+  echo "Generating bootstrap script..."
+  MARIADB_ROOT_PASSWORD_FILE=${MARIADB_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
+  MARIADB_ROOT_HOST_FILE=${MARIADB_ROOT_HOST_FILE:-/run/secrets/mysql_root_host}
+  MARIADB_PASSWORD_FILE=${MARIADB_PASSWORD_FILE:-/run/secrets/mysql_password}
+  MARIADB_DATABASE_FILE=${MARIADB_DATABASE_FILE:-/run/secrets/MARIADB_DATABASE}
+  if [ -z $MARIADB_ROOT_PASSWORD ] && [ -f $MARIADB_ROOT_PASSWORD_FILE ]; then
+    MARIADB_ROOT_PASSWORD=$(cat $MARIADB_ROOT_PASSWORD_FILE)
+  fi
+  if [ -z $MARIADB_ROOT_HOST ] && [ -f $MARIADB_ROOT_HOST_FILE ]; then
+    MARIADB_ROOT_HOST=$(cat $MARIADB_ROOT_HOST_FILE)
+  fi
+  if [ -z $MARIADB_PASSWORD ] && [ -f $MARIADB_PASSWORD_FILE ]; then
+    MARIADB_PASSWORD=$(cat $MARIADB_PASSWORD_FILE)
+  fi
+  if [ -z $MARIADB_DATABASE ] && [ -f $MARIADB_DATABASE_FILE ]; then
+    MARIADB_DATABASE=$(cat $MARIADB_DATABASE_FILE)
+  fi
+  if [ -z "$MARIADB_ROOT_PASSWORD" ]; then
+    MARIADB_ROOT_PASSWORD=$(head -c 32 /dev/urandom | base64 | head -c 32)
+    echo "MARIADB_ROOT_PASSWORD=$MARIADB_ROOT_PASSWORD"
+  fi
+  if [ -z "$MARIADB_ROOT_HOST" ]; then
+    MARIADB_ROOT_HOST='127.0.0.1'
+  fi
+
+  >/tmp/bootstrap.sql
+
+  # Create 'root' user
+  cat >> /tmp/bootstrap.sql <<EOF
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'${MARIADB_ROOT_HOST}' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
+EOF
+  if [ "$MARIADB_ROOT_SOCKET_AUTH" != "0" ]; then
+    cat >> /tmp/bootstrap.sql <<EOF
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;
+EOF
+  else
+    cat >> /tmp/bootstrap.sql <<EOF
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
+EOF
+  fi
+
+  # Create a 'maxscale' and 'system' user for healthchecks and shutdown signal
+  cat >> /tmp/bootstrap.sql <<EOF
+CREATE USER '$MAXSCALE_USER'@'%' IDENTIFIED BY '$MAXSCALE_USER_PASSWORD';
+GRANT SELECT ON mysql.user TO '$MAXSCALE_USER'@'%';
+GRANT SELECT ON mysql.db TO '$MAXSCALE_USER'@'%';
+GRANT SELECT ON mysql.tables_priv TO '$MAXSCALE_USER'@'%';
+GRANT SELECT ON mysql.roles_mapping TO '$MAXSCALE_USER'@'%';
+GRANT SHOW DATABASES ON *.* TO '$MAXSCALE_USER'@'%';
+GRANT REPLICATION CLIENT, REPLICATION SLAVE, SUPER, RELOAD on *.* to '$MAXSCALE_USER'@'%';
+
+CREATE USER '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MAXSCALE_MONITOR_PASSWORD';
+GRANT REPLICATION CLIENT on *.* to '$MAXSCALE_MONITOR_USER'@'%';
+GRANT SUPER, RELOAD on *.* to '$MAXSCALE_MONITOR_USER'@'%';
+
+CREATE USER IF NOT EXISTS 'system'@'127.0.0.1' IDENTIFIED BY '$SYSTEM_PASSWORD';
+GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'127.0.0.1';
+CREATE USER IF NOT EXISTS 'system'@'localhost' IDENTIFIED BY '$SYSTEM_PASSWORD';
+GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'localhost';
+EOF
+
+  # Create mariabackup user if needed
+  if [[ $SST_METHOD =~ ^(mariabackup) ]] ; then
+    cat >>/tmp/bootstrap.sql <<EOF
+CREATE USER IF NOT EXISTS '$MARIABACKUP_USER'@'localhost';
+GRANT PROCESS,RELOAD,LOCK TABLES,REPLICATION CLIENT ON *.* TO '$MARIABACKUP_USER'@'localhost';
+EOF
+    if [[ -n $MARIABACKUP_PASSWORD ]]; then
+      cat >>/tmp/bootstrap.sql <<EOF
+SET PASSWORD FOR '$MARIABACKUP_USER'@'localhost' = PASSWORD('$MARIABACKUP_PASSWORD');
+EOF
+    fi
+  fi
+
+  # Create user's database and user
+  if [ "$MARIADB_DATABASE" ]; then
+    echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` ;" >> /tmp/bootstrap.sql
+  fi
+
+  if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
+    echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ;" >> /tmp/bootstrap.sql
+    echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
+  fi
+  echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
+
+  # Add additional database initialization scripts
+        for f in /docker-entrypoint-initdb.d/*; do
+                case "$f" in
+                        *.sh)     echo "$0: running $f"; . "$f" ;;
+                        *.sql)    echo "$0: appending $f"; cat "$f" >> /tmp/bootstrap.sql ;;
+                        *.sql.gz) echo "$0: appending $f"; gunzip -c "$f" >> /tmp/bootstrap.sql ;;
+                        *)        echo "$0: ignoring $f" ;;
+                esac
+                echo
+        done
+
+  MARIADB_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
+
+}
 
 #
 # Utility modes
@@ -74,13 +174,16 @@ case "$1" in
       echo "There are no init scripts to run"
 		fi
 
+    create_db_users
+
 		set +e -m
     mariadb_control.sh \
+     	$MARIADB_MODE_ARGS \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
 
     mariadb_pid=$!
-    
+
     echo "Started MariaDB"
 		# Start fake healthcheck
 		if [[ -n $FAKE_HEALTHCHECK ]]; then
@@ -187,106 +290,9 @@ fi
 if   ( [ "$START_MODE" = "node" ] && [ -f /var/lib/mysql/force-cluster-bootstrapping ] ) \
   || ( [ "$START_MODE" = "seed" ] && ! [ -f /var/lib/mysql/skip-cluster-bootstrapping ] )
 then
-	echo "Generating cluster bootstrap script..."
-	MARIADB_ROOT_PASSWORD_FILE=${MARIADB_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
-	MARIADB_ROOT_HOST_FILE=${MARIADB_ROOT_HOST_FILE:-/run/secrets/mysql_root_host}
-	MARIADB_PASSWORD_FILE=${MARIADB_PASSWORD_FILE:-/run/secrets/mysql_password}
-	MARIADB_DATABASE_FILE=${MARIADB_DATABASE_FILE:-/run/secrets/MARIADB_DATABASE}
-	if [ -z $MARIADB_ROOT_PASSWORD ] && [ -f $MARIADB_ROOT_PASSWORD_FILE ]; then
-		MARIADB_ROOT_PASSWORD=$(cat $MARIADB_ROOT_PASSWORD_FILE)
-	fi
-	if [ -z $MARIADB_ROOT_HOST ] && [ -f $MARIADB_ROOT_HOST_FILE ]; then
-		MARIADB_ROOT_HOST=$(cat $MARIADB_ROOT_HOST_FILE)
-	fi
-	if [ -z $MARIADB_PASSWORD ] && [ -f $MARIADB_PASSWORD_FILE ]; then
-		MARIADB_PASSWORD=$(cat $MARIADB_PASSWORD_FILE)
-	fi
-	if [ -z $MARIADB_DATABASE ] && [ -f $MARIADB_DATABASE_FILE ]; then
-		MARIADB_DATABASE=$(cat $MARIADB_DATABASE_FILE)
-	fi
-	if [ -z "$MARIADB_ROOT_PASSWORD" ]; then
-		MARIADB_ROOT_PASSWORD=$(head -c 32 /dev/urandom | base64 | head -c 32)
-		echo "MARIADB_ROOT_PASSWORD=$MARIADB_ROOT_PASSWORD"
-	fi
-	if [ -z "$MARIADB_ROOT_HOST" ]; then
-		MARIADB_ROOT_HOST='127.0.0.1'
-	fi
-
-	>/tmp/bootstrap.sql
-
-	# Create 'root' user
-	cat >> /tmp/bootstrap.sql <<EOF
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'${MARIADB_ROOT_HOST}' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
-EOF
-	if [ "$MARIADB_ROOT_SOCKET_AUTH" != "0" ]; then
-		cat >> /tmp/bootstrap.sql <<EOF
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED VIA unix_socket WITH GRANT OPTION;
-EOF
-	else
-		cat >> /tmp/bootstrap.sql <<EOF
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD' WITH GRANT OPTION;
-EOF
-	fi
-
-	# Create a 'maxscale' and 'system' user for healthchecks and shutdown signal
-	cat >> /tmp/bootstrap.sql <<EOF
-CREATE USER '$MAXSCALE_USER'@'%' IDENTIFIED BY '$MAXSCALE_USER_PASSWORD';
-GRANT SELECT ON mysql.user TO '$MAXSCALE_USER'@'%';
-GRANT SELECT ON mysql.db TO '$MAXSCALE_USER'@'%';
-GRANT SELECT ON mysql.tables_priv TO '$MAXSCALE_USER'@'%';
-GRANT SELECT ON mysql.roles_mapping TO '$MAXSCALE_USER'@'%';
-GRANT SHOW DATABASES ON *.* TO '$MAXSCALE_USER'@'%';
-GRANT REPLICATION CLIENT, REPLICATION SLAVE, SUPER, RELOAD on *.* to '$MAXSCALE_USER'@'%';
-
-CREATE USER '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MAXSCALE_MONITOR_PASSWORD';
-GRANT REPLICATION CLIENT on *.* to '$MAXSCALE_MONITOR_USER'@'%';
-GRANT SUPER, RELOAD on *.* to '$MAXSCALE_MONITOR_USER'@'%';
-
-
-CREATE USER IF NOT EXISTS 'system'@'127.0.0.1' IDENTIFIED BY '$SYSTEM_PASSWORD';
-GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'127.0.0.1';
-CREATE USER IF NOT EXISTS 'system'@'localhost' IDENTIFIED BY '$SYSTEM_PASSWORD';
-GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'localhost';
-EOF
-
-	# Create mariabackup user if needed
-	if [[ $SST_METHOD =~ ^(mariabackup) ]] ; then
-		cat >>/tmp/bootstrap.sql <<EOF
-CREATE USER IF NOT EXISTS '$MARIABACKUP_USER'@'localhost';
-GRANT PROCESS,RELOAD,LOCK TABLES,REPLICATION CLIENT ON *.* TO '$MARIABACKUP_USER'@'localhost';
-EOF
-		if [[ -n $MARIABACKUP_PASSWORD ]]; then
-			cat >>/tmp/bootstrap.sql <<EOF
-SET PASSWORD FOR '$MARIABACKUP_USER'@'localhost' = PASSWORD('$MARIABACKUP_PASSWORD');
-EOF
-		fi
-	fi
-
-	# Create user's database and user
-	if [ "$MARIADB_DATABASE" ]; then
-		echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` ;" >> /tmp/bootstrap.sql
-	fi
-
-	if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
-		echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ;" >> /tmp/bootstrap.sql
-		echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
-	fi
-	echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
-
-	# Add additional database initialization scripts
-        for f in /docker-entrypoint-initdb.d/*; do
-                case "$f" in
-                        *.sh)     echo "$0: running $f"; . "$f" ;;
-                        *.sql)    echo "$0: appending $f"; cat "$f" >> /tmp/bootstrap.sql ;;
-                        *.sql.gz) echo "$0: appending $f"; gunzip -c "$f" >> /tmp/bootstrap.sql ;;
-                        *)        echo "$0: ignoring $f" ;;
-                esac
-                echo
-        done
-
-	MARIADB_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
-	rm -f /var/lib/mysql/force-cluster-bootstrapping
-	touch /var/lib/mysql/skip-cluster-bootstrapping
+  create_db_users
+  rm -f /var/lib/mysql/force-cluster-bootstrapping
+  touch /var/lib/mysql/skip-cluster-bootstrapping
 fi
 
 #
