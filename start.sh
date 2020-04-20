@@ -75,10 +75,12 @@ case "$1" in
 		fi
 
 		set +e -m
-		mariadbd \
+    mariadb_control.sh \
 			--wsrep-on=OFF \
 			"$@" 2>&1 &
-		mariadb_pid=$!
+
+    mariadb_pid=$!
+    
     echo "Started MariaDB"
 		# Start fake healthcheck
 		if [[ -n $FAKE_HEALTHCHECK ]]; then
