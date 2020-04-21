@@ -188,6 +188,17 @@ function standalone_install () {
 		"$@" 2>&1 &
   mariadb_pid=$!
   echo "Started MariaDB"
+  echo "****************************"
+  echo "****************************"
+
+  echo "Waiting for mariadbd to be ready (accepting connections)"
+  until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+
+  echo "****************************"
+  echo "****************************"
+  echo "****************************"
+  echo "****************************"
+  echo "****************************"
 
 	# Start fake healthcheck
 	if [[ -n $FAKE_HEALTHCHECK ]]; then
@@ -217,8 +228,7 @@ function standalone_install () {
 
        if [[ -f change_master_to.sql.in ]]; then
 
-         echo "Waiting for mariadbd to be ready (accepting connections)"
-         until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+
          echo "Initializing replication from clone position"
          mariadb -umariadb -pmariadb -h 127.0.0.1 < change_master_to.sql.in || exit 1
          # In case of container restart, attempt this at-most-once.
