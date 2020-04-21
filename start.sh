@@ -174,30 +174,69 @@ function standalone_install () {
       create_db_users
     else
       echo "Server is not a master, and has no data directory, we are going to clone"
+      echo "Cloning from mariadb-$(($ordinal-1)).mariadb"
       ncat --recv-only mariadb-$(($ordinal-1)).mariadb 3307 | mbstream -x -C /var/lib/mysql
       mariabackup --prepare --target-dir=/var/lib/mysql
       touch /var/lib/mysql/servercloned
     fi
-
   fi
-
 
 	set +e -m
   mariadb_control.sh \
    	$MARIADB_MODE_ARGS \
 		--wsrep-on=OFF \
 		"$@" 2>&1 &
-
   mariadb_pid=$!
-
   echo "Started MariaDB"
+
 	# Start fake healthcheck
 	if [[ -n $FAKE_HEALTHCHECK ]]; then
 		no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
 	fi
   echo "Started healthcheck"
-	wait $mariadb_pid || true
+
+  exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
+    "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb"
+
+  echo "Started ncat stream for passing backups"
+
+  if [[ -f /var/lib/mysql/servercloned ]]; then
+
+     echo "This server was cloned from another, configuring replica"
+     cd /var/lib/mysql
+     if [[ -f xtrabackup_info ]]
+       echo "USING SLAVE GTID POS"
+       slavegtidpos=`cat xtrabackup_info | grep binlog_pos | awk -F "change" ' { print $2 }'`
+       if [[ -n $slavegtidpos ]]; then
+
+         echo "STOP SLAVE; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > change_master_to.sql.in
+         echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='mariadb-0.mariadb', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> change_master_to.sql.in
+       else
+         echo "SLAVE POS IS EMPTY"
+       fi
+
+       if [[ -f change_master_to.sql.in ]]; then
+
+         echo "Waiting for mariadbd to be ready (accepting connections)"
+         until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+         echo "Initializing replication from clone position"
+         mariadb -umariadb -pmariadb -h 127.0.0.1 < change_master_to.sql.in || exit 1
+         # In case of container restart, attempt this at-most-once.
+         mv change_master_to.sql.in change_master_to.sql.orig
+         mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
+       fi
+
+     fi
+
+
+
+  fi
+
+  echo "Waiting for MariaDB to exit"
+  wait $mariadb_pid || true
 	exit
+
+
 
 }
 
