@@ -187,23 +187,13 @@ function standalone_install () {
 		--wsrep-on=OFF \
 		"$@" 2>&1 &
   mariadb_pid=$!
+  sleep 10
   echo "Started MariaDB"
   echo "****************************"
-  echo "****************************"
-
-  echo "Waiting for mariadbd to be ready (accepting connections)"
+  echo "Waiting for MariaDB to be ready (accepting connections)"
   until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
-
+  echo "MariaDB accepting connections"
   echo "****************************"
-  echo "****************************"
-  echo "****************************"
-  echo "****************************"
-  echo "****************************"
-
-
-
-  echo "Listing:"
-  ls -l /var/lib/mysql
 
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
@@ -234,9 +224,7 @@ function standalone_install () {
   fi
 
 
-  exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
-    "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb"
-
+  ncat --listen --keep-open --send-only --max-conns=1 3307 -c "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb" &
   echo "Started ncat stream for passing backups"
 
   # Start fake healthcheck
@@ -248,8 +236,6 @@ function standalone_install () {
   echo "Waiting for MariaDB to exit"
   wait $mariadb_pid || true
 	exit
-
-
 
 }
 
