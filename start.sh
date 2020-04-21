@@ -202,7 +202,8 @@ function standalone_install () {
 
 
 
-  echo "Listing:" ls -l /var/lib/mysql
+  echo "Listing:"
+  ls -l /var/lib/mysql
 
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
