@@ -174,8 +174,8 @@ function standalone_install () {
       create_db_users
     else
       echo "Server is not a master, and has no data directory, we are going to clone"
-      echo "Cloning from mariadb-$(($ordinal-1)).mariadb"
-      ncat --recv-only mariadb-$(($ordinal-1)).mariadb 3307 | mbstream -x -C /var/lib/mysql
+      echo "Cloning from $BACKUPSTREAM"
+      ncat --recv-only $BACKUPSTREAM 3307 | mbstream -x -C /var/lib/mysql
       mariabackup --prepare --target-dir=/var/lib/mysql
       touch /var/lib/mysql/servercloned
     fi
