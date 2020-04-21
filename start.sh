@@ -147,17 +147,57 @@ EOF
   echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
 
   # Add additional database initialization scripts
-        for f in /docker-entrypoint-initdb.d/*; do
-                case "$f" in
-                        *.sh)     echo "$0: running $f"; . "$f" ;;
-                        *.sql)    echo "$0: appending $f"; cat "$f" >> /tmp/bootstrap.sql ;;
-                        *.sql.gz) echo "$0: appending $f"; gunzip -c "$f" >> /tmp/bootstrap.sql ;;
-                        *)        echo "$0: ignoring $f" ;;
-                esac
-                echo
-        done
+  for f in /docker-entrypoint-initdb.d/*; do
+          case "$f" in
+                  *.sh)     echo "$0: running $f"; . "$f" ;;
+                  *.sql)    echo "$0: appending $f"; cat "$f" >> /tmp/bootstrap.sql ;;
+                  *.sql.gz) echo "$0: appending $f"; gunzip -c "$f" >> /tmp/bootstrap.sql ;;
+                  *)        echo "$0: ignoring $f" ;;
+          esac
+          echo
+  done
 
   MARIADB_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
+
+}
+
+function standalone_install () {
+
+  if [[ -d /var/lib/mysql/mysql ]]; then
+    echo "This server already has a data directory, not cloning another server"
+  elif [[ `hostname` =~ -([0-9]+)$ ]]; then
+
+    ordinal=${BASH_REMATCH[1]}
+    if [[ $ordinal -eq 0 ]]; then
+      echo "Server is a master server and therefore not cloning"
+      echo "Creating Master Server Users"
+      create_db_users
+    else
+      echo "Server is not a master, and has no data directory, we are going to clone"
+      ncat --recv-only mariadb-$(($ordinal-1)).mariadb 3307 | mbstream -x -C /var/lib/mysql
+      mariabackup --prepare --target-dir=/var/lib/mysql
+      touch /var/lib/mysql/servercloned
+    fi
+
+  fi
+
+
+	set +e -m
+  mariadb_control.sh \
+   	$MARIADB_MODE_ARGS \
+		--wsrep-on=OFF \
+		"$@" 2>&1 &
+
+  mariadb_pid=$!
+
+  echo "Started MariaDB"
+	# Start fake healthcheck
+	if [[ -n $FAKE_HEALTHCHECK ]]; then
+		no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
+	fi
+  echo "Started healthcheck"
+	wait $mariadb_pid || true
+	exit
 
 }
 
@@ -174,40 +214,8 @@ case "$1" in
 	no-galera)
 		echo "Starting standalone instance"
 		shift 1
-
-		# Allow for easily adding more startup scripts
-		if [ -f /usr/local/lib/startup.sh ]; then
-			source /usr/local/lib/startup.sh "$@"
-    else
-      echo "There are no additional startup scripts to run"
-		fi
-
-		# Allow for scripts above to create a one-time use init-file
-		if [ -f /var/lib/mysql/init-file.sql ]; then
-			mv /var/lib/mysql/init-file.sql /tmp/init-file.sql
-			set -- "$@" --init-file=/tmp/init-file.sql
-    else
-      echo "There are no init scripts to run"
-		fi
-
-    create_db_users
-    startProcess
-		set +e -m
-    mariadb_control.sh \
-     	$MARIADB_MODE_ARGS \
-			--wsrep-on=OFF \
-			"$@" 2>&1 &
-
-    mariadb_pid=$!
-
-    echo "Started MariaDB"
-		# Start fake healthcheck
-		if [[ -n $FAKE_HEALTHCHECK ]]; then
-			no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
-		fi
-    echo "Started healthcheck"
-		wait $mariadb_pid || true
-		exit
+    echo "-------------- STARTING MODE: No Galera ---------------------"
+    standalone_install
 		;;
 	bash)
 		shift 1
