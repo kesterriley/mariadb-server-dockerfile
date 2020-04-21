@@ -173,11 +173,17 @@ function standalone_install () {
       echo "Creating Master Server Users"
       create_db_users
     else
-      echo "Server is not a master, and has no data directory, we are going to clone"
-      echo "Cloning from $BACKUPSTREAM"
-      ncat --recv-only $BACKUPSTREAM 3307 | mbstream -x -C /var/lib/mysql
-      mariabackup --prepare --target-dir=/var/lib/mysql
-      touch /var/lib/mysql/servercloned
+      if [[ -n $BACKUPSTREAM ]]; then
+
+        echo "Server is not a master, and has no data directory, we are going to clone"
+        echo "Cloning from $BACKUPSTREAM"
+        ncat --recv-only $BACKUPSTREAM 3307 | mbstream -x -C /var/lib/mysql
+        mariabackup --prepare --target-dir=/var/lib/mysql
+        touch /var/lib/mysql/servercloned
+      else
+          echo "BACKUPSTREAM is not defined"
+          exit
+      fi
     fi
   fi
 
@@ -204,8 +210,13 @@ function standalone_install () {
        slavegtidpos=`cat xtrabackup_info | grep binlog_pos | awk -F "change" ' { print $2 }'`
        if [[ -n $slavegtidpos ]]; then
 
+         if [[ -n $MASTERHOST ]]; then
+           echo "MASTERHOST is not set"
+           exit
+         fi
+
          echo "STOP SLAVE; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > change_master_to.sql.in
-         echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='mariadb-0.mariadb', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> change_master_to.sql.in
+         echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> change_master_to.sql.in
        else
          echo "SLAVE POS IS EMPTY"
        fi
