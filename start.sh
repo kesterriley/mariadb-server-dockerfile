@@ -214,7 +214,7 @@ function standalone_install () {
            echo "STOP SLAVE; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > change_master_to.sql.in
            echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> change_master_to.sql.in
          else
-           echo "MASTERHOST is not set, check configuration"
+           echo "MASTERHOST is not set, check configuration."
          fi
        else
          echo "SLAVE POS IS EMPTY"
