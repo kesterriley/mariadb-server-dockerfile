@@ -200,16 +200,9 @@ function standalone_install () {
   echo "****************************"
   echo "****************************"
 
-	# Start fake healthcheck
-	if [[ -n $FAKE_HEALTHCHECK ]]; then
-		no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
-	fi
-  echo "Started healthcheck"
 
-  exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
-    "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb"
 
-  echo "Started ncat stream for passing backups"
+  echo "Listing:" ls -l /var/lib/mysql
 
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
@@ -238,6 +231,18 @@ function standalone_install () {
 
      fi
   fi
+
+
+  exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
+    "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb"
+
+  echo "Started ncat stream for passing backups"
+
+  # Start fake healthcheck
+	if [[ -n $FAKE_HEALTHCHECK ]]; then
+		no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
+	fi
+  echo "Started healthcheck"
 
   echo "Waiting for MariaDB to exit"
   wait $mariadb_pid || true
