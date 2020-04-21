@@ -204,7 +204,7 @@ function standalone_install () {
 
      echo "This server was cloned from another, configuring replica"
      cd /var/lib/mysql
-     if [[ -f xtrabackup_info ]]
+     if [[ -f xtrabackup_info ]]; then
        echo "USING SLAVE GTID POS"
        slavegtidpos=`cat xtrabackup_info | grep binlog_pos | awk -F "change" ' { print $2 }'`
        if [[ -n $slavegtidpos ]]; then
@@ -227,9 +227,6 @@ function standalone_install () {
        fi
 
      fi
-
-
-
   fi
 
   echo "Waiting for MariaDB to exit"
