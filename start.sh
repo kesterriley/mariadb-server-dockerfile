@@ -173,7 +173,7 @@ function startBackupStream ()
   fi
 }
 
-function standalone_install () {
+function checkandclone () {
 
   if [[ -d /var/lib/mysql/mysql ]]; then
     echo "This server already has a data directory, not cloning another server"
@@ -210,12 +210,10 @@ function standalone_install () {
     fi
   fi
 
-	set +e -m
-  mariadb_control.sh \
-   	$MARIADB_MODE_ARGS \
-		--wsrep-on=OFF \
-		"$@" 2>&1 &
-  mariadb_pid=$!
+}
+
+function waitforservice () {
+
   sleep 10
   echo "Started MariaDB"
   echo "****************************"
@@ -223,6 +221,22 @@ function standalone_install () {
   until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
   echo "MariaDB accepting connections"
   echo "****************************"
+
+}
+
+function standalone_install () {
+
+
+  checkandclone
+
+	set +e -m
+  mariadb_control.sh \
+   	$MARIADB_MODE_ARGS \
+		--wsrep-on=OFF \
+		"$@" 2>&1 &
+  mariadb_pid=$!
+
+  waitforservice
 
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
@@ -244,7 +258,6 @@ function standalone_install () {
        fi
 
        if [[ -f change_master_to.sql.in ]]; then
-
 
          echo "Initializing replication from clone position"
          mariadb -umariadb -pmariadb -h 127.0.0.1 < change_master_to.sql.in || exit 1
@@ -395,6 +408,7 @@ fi
 #
 case $START_MODE in
 	seed)
+    checkandclone
 		MARIADB_MODE_ARGS+=" --wsrep-on=ON --wsrep-new-cluster --wsrep-sst-method=$SST_METHOD "
 		echo "Starting seed node"
 	;;
