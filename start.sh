@@ -161,6 +161,18 @@ EOF
 
 }
 
+
+function startBackupStream ()
+{
+  if [[ -n $BACKUPSTREAM ]]; then
+     echo "Starting a backup stream on port 3305"
+  ncat --listen --keep-open --send-only --max-conns=1 3305 -c "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb" &
+  echo "Started ncat stream for passing backups"
+  else
+    echo "Not starting a backup stream"
+  fi
+}
+
 function standalone_install () {
 
   if [[ -d /var/lib/mysql/mysql ]]; then
@@ -174,7 +186,7 @@ function standalone_install () {
       if [[ -n $CLONEFROMREMOTE ]]; then
         echo "Server has no data directory, and is a master server and it is set to clone"
         echo " ... from $CLONEFROMREMOTE"
-        ncat --recv-only $CLONEFROMREMOTE 3307 | mbstream -x -C /var/lib/mysql
+        ncat --recv-only $CLONEFROMREMOTE 3305 | mbstream -x -C /var/lib/mysql
         mariabackup --prepare --target-dir=/var/lib/mysql
         echo $CLONEFROMREMOTE > /var/lib/mysql/serverClonedFromRemoteMaster
         echo "THIS SERVER WAS CLONED FROM A REMOTE LOCATION, YOU MUST CONFIGURE REPLICATION"
@@ -188,7 +200,7 @@ function standalone_install () {
 
         echo "Server is not a master, and has no data directory, we are going to clone"
         echo "Cloning from $BACKUPSTREAM"
-        ncat --recv-only $BACKUPSTREAM 3307 | mbstream -x -C /var/lib/mysql
+        ncat --recv-only $BACKUPSTREAM 3305 | mbstream -x -C /var/lib/mysql
         mariabackup --prepare --target-dir=/var/lib/mysql
         touch /var/lib/mysql/servercloned
       else
@@ -244,9 +256,7 @@ function standalone_install () {
      fi
   fi
 
-
-  ncat --listen --keep-open --send-only --max-conns=1 3307 -c "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb" &
-  echo "Started ncat stream for passing backups"
+  startBackupStream
 
   # Start fake healthcheck
 	if [[ -n $FAKE_HEALTHCHECK ]]; then
@@ -486,6 +496,8 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
 fi
 
+# See if a Backup Stream is required
+startBackupStream
 
 mariadb_control.sh \
 	$MARIADB_MODE_ARGS \
