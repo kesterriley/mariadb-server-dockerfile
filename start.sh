@@ -169,9 +169,20 @@ function standalone_install () {
 
     ordinal=${BASH_REMATCH[1]}
     if [[ $ordinal -eq 0 ]]; then
-      echo "Server is a master server and therefore not cloning"
-      echo "Creating Master Server Users"
-      create_db_users
+
+      #Check the environment variable to see if it is not an empty string
+      if [[ -n $CLONEFROMREMOTE ]]; then
+        echo "Server has no data directory, and is a master server and it is set to clone"
+        echo " ... from $CLONEFROMREMOTE"
+        ncat --recv-only $CLONEFROMREMOTE 3307 | mbstream -x -C /var/lib/mysql
+        mariabackup --prepare --target-dir=/var/lib/mysql
+        echo $CLONEFROMREMOTE > /var/lib/mysql/serverClonedFromRemoteMaster
+        echo "THIS SERVER WAS CLONED FROM A REMOTE LOCATION, YOU MUST CONFIGURE REPLICATION"
+      else
+        echo "Server is a master server and therefore not cloning"
+        echo "Creating Master Server Users"
+        create_db_users
+      fi
     else
       if [[ -n $BACKUPSTREAM ]]; then
 
