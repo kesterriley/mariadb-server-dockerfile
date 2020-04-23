@@ -224,6 +224,38 @@ function waitforservice () {
 
 }
 
+function setupreplication () {
+
+  echo "Checking to see if replication needs configuring"
+
+  if [[ -f /var/lib/mysql/xtrabackup_info ]]; then
+    echo "USING SLAVE GTID POS"
+    slavegtidpos=`cat /var/lib/mysql/xtrabackup_info | grep binlog_pos | awk -F "change" ' { print $2 }'`
+    if [[ -n $slavegtidpos ]]; then
+
+      if [[ -n $MASTERHOST ]]; then
+        echo "STOP SLAVE; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to.sql.in
+        echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> /var/lib/mysql/change_master_to.sql.in
+      else
+        echo "MASTERHOST is not set, check configuration."
+      fi
+    else
+      echo "SLAVE POS IS EMPTY"
+    fi
+
+    if [[ -f /var/lib/mysql/change_master_to.sql.in ]]; then
+
+      echo "Initializing replication from clone position"
+      mariadb -umariadb -pmariadb -h 127.0.0.1 < /var/lib/mysql/change_master_to.sql.in || exit 1
+      # In case of container restart, attempt this at-most-once.
+      mv /var/lib/mysql/change_master_to.sql.in /var/lib/mysql/change_master_to.sql.orig
+
+    fi
+
+  fi
+
+}
+
 function standalone_install () {
 
 
@@ -241,32 +273,8 @@ function standalone_install () {
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
      echo "This server was cloned from another, configuring replica"
-     cd /var/lib/mysql
-     if [[ -f xtrabackup_info ]]; then
-       echo "USING SLAVE GTID POS"
-       slavegtidpos=`cat xtrabackup_info | grep binlog_pos | awk -F "change" ' { print $2 }'`
-       if [[ -n $slavegtidpos ]]; then
-
-         if [[ -n $MASTERHOST ]]; then
-           echo "STOP SLAVE; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > change_master_to.sql.in
-           echo "CHANGE MASTER TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE;" >> change_master_to.sql.in
-         else
-           echo "MASTERHOST is not set, check configuration."
-         fi
-       else
-         echo "SLAVE POS IS EMPTY"
-       fi
-
-       if [[ -f change_master_to.sql.in ]]; then
-
-         echo "Initializing replication from clone position"
-         mariadb -umariadb -pmariadb -h 127.0.0.1 < change_master_to.sql.in || exit 1
-         # In case of container restart, attempt this at-most-once.
-         mv change_master_to.sql.in change_master_to.sql.orig
-         mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
-       fi
-
-     fi
+     setupreplication
+     mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
   fi
 
   startBackupStream
@@ -510,15 +518,27 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
 fi
 
-# See if a Backup Stream is required
-startBackupStream
+
+
 
 mariadb_control.sh \
-	$MARIADB_MODE_ARGS \
-        --wsrep_cluster_name=$CLUSTER_NAME \
-	--wsrep_cluster_address=gcomm://$GCOMM \
-	--wsrep_node_address=$NODE_ADDRESS:4567 \
-	"$@" 2>&1 &
+$MARIADB_MODE_ARGS \
+--wsrep_cluster_name=$CLUSTER_NAME \
+--wsrep_cluster_address=gcomm://$GCOMM \
+--wsrep_node_address=$NODE_ADDRESS:4567 \
+"$@" 2>&1 &
+
+mariadb_pid=$!
+
+waitforservice
+# See if a Backup Stream is required
+if [[ -f /var/lib/mysql/serverClonedFromRemoteMaster ]]; then
+
+   echo "This server was cloned from another, configuring replica"
+   setupreplication
+   mv /var/lib/mysql/serverClonedFromRemoteMaster /var/lib/mysql/serverClonedFromRemoteMaster.OLD
+fi
+startBackupStream
 
 wait $! || true
 RC=$?
@@ -531,3 +551,19 @@ test -s /var/run/galera-healthcheck-2.pid && kill $(cat /var/run/galera-healthch
 
 echo "Goodbye"
 exit $RC
+
+
+
+
+
+
+
+# Start fake healthcheck
+if [[ -n $FAKE_HEALTHCHECK ]]; then
+  no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
+fi
+echo "Started healthcheck"
+
+echo "Waiting for MariaDB to exit"
+wait $mariadb_pid || true
+exit
