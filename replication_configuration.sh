@@ -12,7 +12,7 @@
 [[ ! -z "$1" ]] && lv_local_master_user=$1 || echo "lv_local_master_user is not set, check configuration."; exit
 [[ ! -z "$1" ]] && lv_local_master_password=$1 || echo "lv_local_master_password is not set, check configuration."; exit
 
-echo "STOP SLAVE '${lv_remote_master_host%%.*}'; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to_${lv_remote_master_host%%.*}.sql.in
+echo "SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to_${lv_remote_master_host%%.*}.sql.in
 echo "CHANGE MASTER '${lv_remote_master_host%%.*}' TO master_use_gtid = slave_pos, MASTER_HOST='$lv_remote_master_host', MASTER_USER='$lv_remote_master_user', MASTER_PASSWORD='$lv_remote_master_password', MASTER_CONNECT_RETRY=10; START SLAVE '${lv_remote_master_host%%.*}';" >> /var/lib/mysql/change_master_to_${lv_remote_master_host%%.*}.sql.in
 
 if [[ -f /var/lib/mysql/change_master_to.sql.in ]]; then

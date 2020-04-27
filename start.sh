@@ -234,7 +234,7 @@ function setupreplication () {
     if [[ -n $slavegtidpos ]]; then
 
       if [[ -n $MASTERHOST ]]; then
-        echo "STOP SLAVE '${MASTERHOST%%.*}'; SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to.sql.in
+        echo "SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to.sql.in
         echo "CHANGE MASTER '${MASTERHOST%%.*}' TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE '${MASTERHOST%%.*}';" >> /var/lib/mysql/change_master_to.sql.in
       else
         echo "MASTERHOST is not set, check configuration."
