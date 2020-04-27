@@ -62,6 +62,7 @@ RUN set -ex ;\
     chown -R root:root  /etc/my.cnf ; \
     chmod -R 644 /etc/my.cnf.d ;\
     chmod -R 644 /etc/my.cnf ;\
+    chmod -R 777 /usr/local/bin/*.sh ;\
     sed -i '$d' /etc/passwd ; \
     rm -rf /var/lib/mysql ; \
     chmod g=u /etc/passwd ; \
