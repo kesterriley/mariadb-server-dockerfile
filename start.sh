@@ -348,8 +348,8 @@ echo "Got NODE_ADDRESS=$NODE_ADDRESS"
 
 # Allow for easily adding more startup scripts
 export NODE_ADDRESS
-if [ -f /usr/local/lib/startup.sh ]; then
-	source /usr/local/lib/startup.sh "$@"
+if [ -f /usr/local/bin/mariadb_custom_startup.sh ]; then
+	source /usr/local/bin/mariadb_custom_startup.sh "$@"
 fi
 
 MARIADB_MODE_ARGS=""
@@ -518,9 +518,6 @@ if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
 	sleep 5 && run-upgrades.sh || true &
 fi
 
-
-
-
 mariadb_control.sh \
 $MARIADB_MODE_ARGS \
 --wsrep_cluster_name=$CLUSTER_NAME \
@@ -551,19 +548,3 @@ test -s /var/run/galera-healthcheck-2.pid && kill $(cat /var/run/galera-healthch
 
 echo "Goodbye"
 exit $RC
-
-
-
-
-
-
-
-# Start fake healthcheck
-if [[ -n $FAKE_HEALTHCHECK ]]; then
-  no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
-fi
-echo "Started healthcheck"
-
-echo "Waiting for MariaDB to exit"
-wait $mariadb_pid || true
-exit
