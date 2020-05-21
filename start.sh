@@ -63,22 +63,7 @@ function startProcess () {
 
 function create_db_users () {
   echo "Generating bootstrap script..."
-  MARIADB_ROOT_PASSWORD_FILE=${MARIADB_ROOT_PASSWORD_FILE:-/run/secrets/mysql_root_password}
-  MARIADB_ROOT_HOST_FILE=${MARIADB_ROOT_HOST_FILE:-/run/secrets/mysql_root_host}
- MARIADB_USER_PASSWORD_FILE=${MARIADB_PASSWORD_FILE:-/run/secrets/mysql_password}
-  MARIADB_DATABASE_FILE=${MARIADB_DATABASE_FILE:-/run/secrets/MARIADB_DATABASE}
-  if [ -z $MARIADB_ROOT_PASSWORD ] && [ -f $MARIADB_ROOT_PASSWORD_FILE ]; then
-    MARIADB_ROOT_PASSWORD=$(cat $MARIADB_ROOT_PASSWORD_FILE)
-  fi
-  if [ -z $MARIADB_ROOT_HOST ] && [ -f $MARIADB_ROOT_HOST_FILE ]; then
-    MARIADB_ROOT_HOST=$(cat $MARIADB_ROOT_HOST_FILE)
-  fi
-  if [ -z $MARIADB_PASSWORD ] && [ -f $MARIADB_PASSWORD_FILE ]; then
-   MARIADB_USER_PASSWORD=$(cat $MARIADB_PASSWORD_FILE)
-  fi
-  if [ -z $MARIADB_DATABASE ] && [ -f $MARIADB_DATABASE_FILE ]; then
-    MARIADB_DATABASE=$(cat $MARIADB_DATABASE_FILE)
-  fi
+
   if [ -z "$MARIADB_ROOT_PASSWORD" ]; then
     MARIADB_ROOT_PASSWORD=$(head -c 32 /dev/urandom | base64 | head -c 32)
     echo "MARIADB_ROOT_PASSWORD=$MARIADB_ROOT_PASSWORD"
@@ -105,7 +90,7 @@ EOF
 
   # Create a 'maxscale' and 'system' user for healthchecks and shutdown signal
   cat >> /tmp/bootstrap.sql <<EOF
-CREATE USER '$MAXSCALE_USER'@'%' IDENTIFIED BY '$MAXSCALE_USER_PASSWORD';
+CREATE USER IF NOT EXISTS '$MAXSCALE_USER'@'%' IDENTIFIED BY '$MAXSCALE_USER_PASSWORD';
 GRANT SELECT ON mysql.user TO '$MAXSCALE_USER'@'%';
 GRANT SELECT ON mysql.db TO '$MAXSCALE_USER'@'%';
 GRANT SELECT ON mysql.tables_priv TO '$MAXSCALE_USER'@'%';
@@ -113,13 +98,18 @@ GRANT SELECT ON mysql.roles_mapping TO '$MAXSCALE_USER'@'%';
 GRANT SHOW DATABASES ON *.* TO '$MAXSCALE_USER'@'%';
 GRANT REPLICATION CLIENT, REPLICATION SLAVE, SUPER, RELOAD on *.* to '$MAXSCALE_USER'@'%';
 
-CREATE USER '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MAXSCALE_MONITOR_USER_PASSWORD';
+CREATE USER IF NOT EXISTS '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MAXSCALE_MONITOR_USER_PASSWORD';
 GRANT REPLICATION CLIENT on *.* to '$MAXSCALE_MONITOR_USER'@'%';
 GRANT SUPER, RELOAD on *.* to '$MAXSCALE_MONITOR_USER'@'%';
 
 CREATE USER IF NOT EXISTS 'system'@'127.0.0.1' IDENTIFIED BY '$SYSTEM_PASSWORD';
 GRANT PROCESS,SHUTDOWN ON *.* TO 'system'@'127.0.0.1';
 
+CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_USER_PASSWORD' ;
+GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;
+
+CREATE USER IF NOT EXISTS '$REPLICATION_USER'@'%' IDENTIFIED BY '$REPLICATION_USER_PASSWORD' ;
+GRANT REPLICATION SLAVE ON *.* TO '$REPLICATION_USER'@'%' ;
 EOF
 
   # Create mariabackup user if needed
@@ -140,16 +130,6 @@ EOF
     echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` ;" >> /tmp/bootstrap.sql
   fi
 
-  if [ "$MARIADB_USER" -a "$MARIADB_USER_PASSWORD" ]; then
-    echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_USER_PASSWORD' ;" >> /tmp/bootstrap.sql
-    echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
-  fi
-
-  if [ "$REPLICATION_USER" -a "$REPLICATION_USER_PASSWORD" ]; then
-    echo "CREATE USER IF NOT EXISTS '$REPLICATION_USER'@'%' IDENTIFIED BY '$REPLICATION_USER_PASSWORD' ;" >> /tmp/bootstrap.sql
-    echo "GRANT REPLICATION SLAVE ON *.* TO '$REPLICATION_USER'@'%' ;" >> /tmp/bootstrap.sql
-  fi
-
   echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
 
   # Add additional database initialization scripts
@@ -166,7 +146,6 @@ EOF
   MARIADB_MODE_ARGS+=" --init-file=/tmp/bootstrap.sql"
 
 }
-
 
 function startBackupStream ()
 {
