@@ -145,9 +145,9 @@ EOF
     echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
   fi
 
-  if [ "$REPLCIATION_USER" -a "$REPLCIATION_USER_PASSWORD" ]; then
-    echo "CREATE USER IF NOT EXISTS '$REPLCIATION_USER'@'%' IDENTIFIED BY '$REPLCIATION_USER_PASSWORD' ;" >> /tmp/bootstrap.sql
-    echo "GRANT REPLICATION SLAVE ON *.* TO '$REPLCIATION_USER'@'%' ;" >> /tmp/bootstrap.sql
+  if [ "$REPLICATION_USER" -a "$REPLICATION_USER_PASSWORD" ]; then
+    echo "CREATE USER IF NOT EXISTS '$REPLICATION_USER'@'%' IDENTIFIED BY '$REPLICATION_USER_PASSWORD' ;" >> /tmp/bootstrap.sql
+    echo "GRANT REPLICATION SLAVE ON *.* TO '$REPLICATION_USER'@'%' ;" >> /tmp/bootstrap.sql
   fi
 
   echo "FLUSH PRIVILEGES;" >> /tmp/bootstrap.sql
