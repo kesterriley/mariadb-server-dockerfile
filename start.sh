@@ -113,7 +113,7 @@ GRANT SELECT ON mysql.roles_mapping TO '$MAXSCALE_USER'@'%';
 GRANT SHOW DATABASES ON *.* TO '$MAXSCALE_USER'@'%';
 GRANT REPLICATION CLIENT, REPLICATION SLAVE, SUPER, RELOAD on *.* to '$MAXSCALE_USER'@'%';
 
-CREATE USER '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MAXSCALE_MONITOR_PASSWORD';
+CREATE USER '$MAXSCALE_MONITOR_USER'@'%' IDENTIFIED BY '$MONITOR_PASSWORD';
 GRANT REPLICATION CLIENT on *.* to '$MAXSCALE_MONITOR_USER'@'%';
 GRANT SUPER, RELOAD on *.* to '$MAXSCALE_MONITOR_USER'@'%';
 
@@ -235,7 +235,7 @@ function setupreplication () {
 
       if [[ -n $MASTERHOST ]]; then
         echo "SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to.sql.in
-        echo "CHANGE MASTER '${MASTERHOST%%.*}' TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='mariadb', MASTER_PASSWORD='mariadb', MASTER_CONNECT_RETRY=10; START SLAVE '${MASTERHOST%%.*}';" >> /var/lib/mysql/change_master_to.sql.in
+        echo "CHANGE MASTER '${MASTERHOST%%.*}' TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='$REPLICATION_USER', MASTER_PASSWORD='$REPLICATION_USER_PASSWORD', MASTER_CONNECT_RETRY=10; START SLAVE '${MASTERHOST%%.*}';" >> /var/lib/mysql/change_master_to.sql.in
       else
         echo "MASTERHOST is not set, check configuration."
       fi
