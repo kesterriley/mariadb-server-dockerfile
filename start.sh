@@ -140,8 +140,8 @@ EOF
     echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` ;" >> /tmp/bootstrap.sql
   fi
 
-  if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
-    echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ;" >> /tmp/bootstrap.sql
+  if [ "$MARIADB_USER" -a "$MARIADB_USER_PASSWORD" ]; then
+    echo "CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_USER_PASSWORD' ;" >> /tmp/bootstrap.sql
     echo "GRANT ALL ON *.* TO '$MARIADB_USER'@'%' ;" >> /tmp/bootstrap.sql
   fi
 
