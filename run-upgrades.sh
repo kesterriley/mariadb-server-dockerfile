@@ -27,9 +27,9 @@ if [[ -z $old_version ]]; then
 
 	# Special case for 10.1 users upgrading to 10.2
   echo "run-upgrades.sh Before Checking Grants"
-	if ! mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -sNe "SHOW GRANTS FOR 'mariabackup'@'localhost';" | grep -qF PROCESS; then
+	if ! mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -sNe "SHOW GRANTS FOR '$MARIABACKUP_USER'@'localhost';" | grep -qF PROCESS; then
 		echo "$0: Granting PROCESS to mariabackup user for old version."
-		mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -e "GRANT PROCESS ON *.* TO 'mariabackup'@'localhost'; FLUSH PRIVILEGES;"
+		mariadb -uroot -p$MARIADB_ROOT_PASSWORD -h127.0.0.1 -e "GRANT PROCESS ON *.* TO '$MARIABACKUP_USER'@'localhost'; FLUSH PRIVILEGES;"
 		echo "run-upgrades.sh After Applying Grants"
 	fi
 fi

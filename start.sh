@@ -128,9 +128,9 @@ EOF
 CREATE USER IF NOT EXISTS '$MARIABACKUP_USER'@'localhost';
 GRANT PROCESS,RELOAD,LOCK TABLES,REPLICATION CLIENT ON *.* TO '$MARIABACKUP_USER'@'localhost';
 EOF
-    if [[ -n $MARIABACKUP_PASSWORD ]]; then
+    if [[ -n $MARIABACKUP_USER_PASSWORD ]]; then
       cat >>/tmp/bootstrap.sql <<EOF
-SET PASSWORD FOR '$MARIABACKUP_USER'@'localhost' = PASSWORD('$MARIABACKUP_PASSWORD');
+SET PASSWORD FOR '$MARIABACKUP_USER'@'localhost' = PASSWORD('$MARIABACKUP_USER_PASSWORD');
 EOF
     fi
   fi
@@ -172,7 +172,7 @@ function startBackupStream ()
 {
   if [[ -n $BACKUPSTREAM ]]; then
      echo "Starting a backup stream on port 3305"
-  ncat --listen --keep-open --send-only --max-conns=1 3305 -c "mariabackup -umariadb -pmariadb --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=mariadb --password=mariadb" &
+  ncat --listen --keep-open --send-only --max-conns=1 3305 -c "mariabackup -u$MARIADB_USER -p$MARIADB_USER_PASSWORD --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=$MARIADB_USER --password=$MARIADB_USER_PASSWORD" &
   echo "Started ncat stream for passing backups"
   else
     echo "Not starting a backup stream"
@@ -224,7 +224,7 @@ function waitforservice () {
   echo "Started MariaDB"
   echo "****************************"
   echo "Waiting for MariaDB to be ready (accepting connections)"
-  until mariadb -umariadb -pmariadb -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+  until mariadb -u$MARIADB_USER -p$MARIADB_USER_PASSWORD -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
   echo "MariaDB accepting connections"
   echo "****************************"
 
@@ -252,7 +252,7 @@ function setupreplication () {
     if [[ -f /var/lib/mysql/change_master_to.sql.in ]]; then
 
       echo "Initializing replication from clone position"
-      mariadb -umariadb -pmariadb -h 127.0.0.1 < /var/lib/mysql/change_master_to.sql.in || exit 1
+      mariadb -u$MARIADB_USER -p$MARIADB_USER_PASSWORD -h 127.0.0.1 < /var/lib/mysql/change_master_to.sql.in || exit 1
       # In case of container restart, attempt this at-most-once.
       mv /var/lib/mysql/change_master_to.sql.in /var/lib/mysql/change_master_to.sql.orig
 
