@@ -340,21 +340,14 @@ fi
 MARIADB_MODE_ARGS=""
 
 if [[ $SST_METHOD =~ ^(mariabackup) ]] ; then
-  MARIABACKUP_PASSWORD_FILE=${MARIABACKUP_PASSWORD_FILE:-/run/secrets/xtrabackup_password}
-  if [ -z $MARIABACKUP_PASSWORD ] && [ -f $MARIABACKUP_PASSWORD_FILE ]; then
-	MARIABACKUP_PASSWORD=$(cat $MARIABACKUP_PASSWORD_FILE)
-  fi
-  [ -z "$MARIABACKUP_PASSWORD" ] && echo "WARNING: MARIABACKUP_PASSWORD is empty"
-  MARIADB_MODE_ARGS+=" --wsrep_sst_auth=$MARIABACKUP_USER:$MARIABACKUP_PASSWORD"
+
+  [ -z "$MARIABACKUP_USER_PASSWORD" ] && echo "WARNING: MARIABACKUP_USER_PASSWORD is empty"
+  MARIADB_MODE_ARGS+=" --wsrep_sst_auth=$MARIABACKUP_USER:$MARIABACKUP_USER_PASSWORD"
 fi
 
-SYSTEM_PASSWORD_FILE=${SYSTEM_PASSWORD_FILE:-/run/secrets/system_password}
-if [ -z $SYSTEM_PASSWORD ] && [ -f $SYSTEM_PASSWORD_FILE ]; then
-	SYSTEM_PASSWORD=$(cat $SYSTEM_PASSWORD_FILE)
-fi
 if [ -z "$SYSTEM_PASSWORD" ]; then
-  if [ -n "$MARIABACKUP_PASSWORD" ]; then
-     SYSTEM_PASSWORD=$(echo "$MARIABACKUP_PASSWORD" | sha256sum | awk '{print $1;}')
+  if [ -n "$SYSTEM_PASSWORD" ]; then
+     SYSTEM_PASSWORD=$(echo "$SYSTEM_PASSWORD" | sha256sum | awk '{print $1;}')
   else
      echo "SYSTEM_PASSWORD not set"
      exit 1
