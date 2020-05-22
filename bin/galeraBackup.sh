@@ -21,7 +21,7 @@ GaleraBackup="--galera-info"
 SCRIPTNAME=`basename "$0"`
 
 Back_Up_User_Settings="--user=$DB_User --password=$DB_Pass --socket=$DB_Sock" # --defaults-file=$DB_Conf
-Back_Up_Settings="--rsync $Back_Up_User_Settings --compress --compress-threads=4 --ftwrl-wait-threshold=40 --ftwrl-wait-query-type=all --ftwrl-wait-timeout=180 --kill-long-queries-timeout=20 --kill-long-query-type=all $GaleraBackup"
+Back_Up_Settings="--rsync $Back_Up_User_Settings --ftwrl-wait-threshold=40 --ftwrl-wait-query-type=all --ftwrl-wait-timeout=180 --kill-long-queries-timeout=20 --kill-long-query-type=all $GaleraBackup"
 
 
 ######################################################################################
@@ -55,7 +55,7 @@ function OutPut()
 
 function returnOutPut()
 {
-	clear 
+	clear
 	printf "${lv_output}"
 }
 
@@ -112,10 +112,10 @@ Do_Incremental_Backup() {
         if [ $NUMBER -eq 1 ]
         then
                 $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir $BackUpLocation/FULL
-		echo "HERE $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir=$BackUpLocation/FULL" 	
+		echo "HERE $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir=$BackUpLocation/FULL"
         else
                 $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir $BackUpLocation/inc$(($NUMBER - 1))
-		echo "THERE $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir $BackUpLocation/inc$(($NUMBER - 1))" 
+		echo "THERE $backup_software $Back_Up_Settings --backup --target-dir $BackUpLocation/inc$NUMBER --incremental-basedir $BackUpLocation/inc$(($NUMBER - 1))"
         fi
         date
 	OutPut "INFO" "... finished incremental backup $NUMBER"
@@ -145,8 +145,6 @@ Do_Restore() {
 	fi
 	#rm -rf /var/log/mysql/innodblogs/*
 	cd ~
-	OutPut "INFO" "... Uncompressing Backup"
-        $backup_software --decompress --parallel=4 --target-dir $BackUpLocation/FULL
 
 	OutPut "INFO" "... Applying Logs to Backup"
         $backup_software --prepare --target-dir $BackUpLocation/FULL --user=$DB_User --password=$DB_Pass --apply-log-only
@@ -155,10 +153,8 @@ Do_Restore() {
 
         while [ -d $BackUpLocation/inc$lv_inc_backup ]
         do
-	        OutPut "INFO" "... Uncompressing Incremental Backup $lv_inc_backup"
-		$backup_software --decompress --parallel=4 --target-dir $BackUpLocation/inc$lv_inc_backup
                 OutPut "INFO" "... Applying Logs to Backup $lv_inc_backup"
-		$backup_software --prepare --target-dir $BackUpLocation/FULL --user=$DB_User --password=$DB_Pass --incremental-dir $BackUpLocation/inc$lv_inc_backup --apply-log-only 
+		$backup_software --prepare --target-dir $BackUpLocation/FULL --user=$DB_User --password=$DB_Pass --incremental-dir $BackUpLocation/inc$lv_inc_backup --apply-log-only
 		lv_inc_backup=$(($lv_inc_backup+1))
 	done
 
@@ -233,4 +229,3 @@ esac
 
 # Return the Output
 returnOutPut
-
