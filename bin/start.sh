@@ -199,7 +199,6 @@ function checkandclone () {
 
 function waitforservice () {
 
-  sleep 10
   echo "Started MariaDB"
   echo "****************************"
   echo "Waiting for MariaDB to be ready (accepting connections)"
@@ -482,7 +481,9 @@ galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 echo "STARTED HEALTH CHECKS"
 
 # Run automated upgrades
-run-upgrades.sh || true
+# Script runs in the background waiting for the service to become available
+# If an upgrade is required this will run.
+run-upgrades.sh || true &
 
 mariadb_control.sh \
 $MARIADB_MODE_ARGS \
