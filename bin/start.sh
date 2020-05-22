@@ -203,7 +203,7 @@ function waitforservice () {
   echo "Started MariaDB"
   echo "****************************"
   echo "Waiting for MariaDB to be ready (accepting connections)"
-  until mariadb -u$MARIADB_USER -p$MARIADB_USER_PASSWORD -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+  until mariadb -u$MARIADB_USER -p$MARIADB_USER_PASSWORD -h 127.0.0.1 -e "SELECT 1"; do echo "... Service not yet available, sleeping"; sleep 5; done
   echo "MariaDB accepting connections"
   echo "****************************"
 
@@ -480,10 +480,9 @@ galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-availWhenReadOnly=true \
 	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
 echo "STARTED HEALTH CHECKS"
+
 # Run automated upgrades
-if [[ -z $SKIP_UPGRADES ]] && [[ ! -f /var/lib/mysql/skip-upgrades ]]; then
-	sleep 5 && run-upgrades.sh || true &
-fi
+run-upgrades.sh || true
 
 mariadb_control.sh \
 $MARIADB_MODE_ARGS \
