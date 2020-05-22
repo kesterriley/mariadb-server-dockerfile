@@ -509,7 +509,6 @@ RC=$?
 
 echo "MariaDB exited with return code ($RC)"
 test -f /var/lib/mysql/grastate.dat && cat /var/lib/mysql/grastate.dat
-
 test -s /var/run/galera-healthcheck-1.pid && kill $(cat /var/run/galera-healthcheck-1.pid)
 test -s /var/run/galera-healthcheck-2.pid && kill $(cat /var/run/galera-healthcheck-2.pid)
 

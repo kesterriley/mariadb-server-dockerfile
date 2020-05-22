@@ -332,18 +332,6 @@ else
 	fi
 fi
 
-# Support "truly healthy" healthchecks by listening on a new port (forwarded to the main healthcheck)
-# We support TCP and HTTP healthchecks by not listening until the main healthcheck reports healthy status
-if [[ $LISTEN_WHEN_HEALTHY -gt 0 ]] && ! [[ "$OPT" =~ --wsrep-on=OFF ]]; then
-	while true; do
-		if curl -sSf -o /dev/null localhost:8080 2>/dev/null; then
-			socat TCP4-LISTEN:$LISTEN_WHEN_HEALTHY,fork TCP4:localhost:8080 &
-			break
-		fi
-		sleep 10
-	done &
-fi
-
 # Start mariadbd
 echo "${LOG_MESSAGE} ---------------------------------------------------------------"
 echo "${LOG_MESSAGE} Starting with options: $OPT $START"
