@@ -2,11 +2,6 @@ FROM centos:centos7
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
-
-#################################################################################
-# PLEASE NOTE YOU MUST HAVE AN ENTERPRISE MARIADB LICENSE FOR THIS INSTALLATION #
-#################################################################################
-
 LABEL maintainer="Kester Riley <kesterriley@hotmail.com>" \
       description="MariaDB 10.4 Server" \
       name="mariadb-server" \
@@ -52,7 +47,6 @@ RUN set -x \
 
 COPY bin/*.sh                /usr/local/bin/
 COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
-COPY primary-component.sql   /
 COPY my.cnf                  /etc/
 
 RUN set -ex ;\
