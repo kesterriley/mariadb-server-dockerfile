@@ -10,8 +10,6 @@ LABEL maintainer="Kester Riley <kesterriley@hotmail.com>" \
       version="10.4.01" \
       date="2020-01-11"
 
-COPY bin/qpress-11-linux-x64.tar /tmp/qpress.tar
-
 RUN set -x \
     && yum update -y \
     && yum install -y epel-release \
@@ -28,8 +26,6 @@ RUN set -x \
       psmisc \
       hostname \
       which \
-    && tar -C /usr/local/bin -xf /tmp/qpress.tar qpress \
-    && chmod +x /usr/local/bin/qpress \
     && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/* \
     && mkdir /etc/my.cnf.d
 
