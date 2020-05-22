@@ -63,9 +63,8 @@ RUN set -ex ;\
         | xargs -0 grep -lZE '^(bind-address|log)' \
         | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/';
 
-COPY fix-permissions.sh ./
-RUN ./fix-permissions.sh /var/lib/   && \
-    ./fix-permissions.sh /var/run/
+RUN /usr/local/bin/fix-permissions.sh /var/lib/   && \
+    /usr/local/bin/fix-permissions.sh /var/run/
 
 EXPOSE 3306 3309 4444 4567 4567/udp 4568 8080 8081
 
