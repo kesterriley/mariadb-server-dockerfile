@@ -1,7 +1,7 @@
 #!/bin/bash
 
 while true; do
-	if [[ ! -f /var/lib/mysql/sst_in_progress ]] && curl -sf -o /dev/null localhost:8080; then
+	if curl -sf -o /dev/null localhost:8080; then
 		break
 	fi
 	echo "$0: waiting for server to become available..."

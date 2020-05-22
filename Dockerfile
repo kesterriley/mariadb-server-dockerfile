@@ -66,8 +66,6 @@ EXPOSE 3306 3309 4444 4567 4567/udp 4568 8080 8081
 
 USER 100020100
 
-HEALTHCHECK --interval=1m --timeout=30s --retries=5 CMD /usr/local/bin/healthcheck.sh
-
 ENV SST_METHOD=mariabackup
 
 STOPSIGNAL SIGTERM

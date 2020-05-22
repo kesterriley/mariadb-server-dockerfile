@@ -264,12 +264,6 @@ function standalone_install () {
 
   startBackupStream
 
-  # Start fake healthcheck
-	if [[ -n $FAKE_HEALTHCHECK ]]; then
-		no-galera-healthcheck.sh $FAKE_HEALTHCHECK >/dev/null &
-	fi
-  echo "Started healthcheck"
-
   echo "Waiting for MariaDB to exit"
   wait $mariadb_pid || true
 	exit
@@ -445,10 +439,6 @@ case $START_MODE in
 
 			COUNT=$(echo "$GCOMM" | tr ',' "\n" | sort -u | grep -v -e "^$NODE_ADDRESS\$" -e '^$' | wc -l)
 			if [ $RESOLVE -eq 1 ] && [ $COUNT -lt $(($GCOMM_MINIMUM - 1)) ]; then
-				# Bypass healthcheck so we can keep waiting for other nodes to appear
-				if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
-					touch /var/lib/mysql/pre-boot.flag
-				fi
 
 				echo "Waiting for at least $GCOMM_MINIMUM IP addresses to resolve..."
 				SLEEPS=$((SLEEPS + 1))
@@ -465,7 +455,6 @@ case $START_MODE in
 			fi
 		done
 		# Pre-boot completed
-		rm -f /var/lib/mysql/pre-boot.flag
 		echo "Starting node, connecting to gcomm://$GCOMM"
 	;;
 esac

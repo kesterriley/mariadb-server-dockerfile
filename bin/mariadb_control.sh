@@ -53,7 +53,6 @@ function fatal_error {
 	echo "${LOG_MESSAGE} Refusing to start since something is seriously wrong.."
 	echo "${LOG_MESSAGE} Touch /var/lib/mysql/new-cluster to force a node to start a new cluster."
 	echo "${LOG_MESSAGE} "
-	rm -f /var/lib/mysql/auto-recovery.flag
 	exit 1
 }
 
@@ -79,9 +78,7 @@ elif [[ "$OPT" =~ --wsrep-on=OFF ]]; then
 	echo "Not Configuring Cluster"
 else
 	# Try to recover state from grastate.dat or logfile
-	if [[ $HEALTHY_WHILE_BOOTING -eq 1 ]]; then
-		touch /var/lib/mysql/auto-recovery.flag
-	fi
+
 	POSITION=''
 	SAFE_TO_BOOTSTRAP=-1
 	if ! test -f /var/lib/mysql/grastate.dat; then
@@ -333,7 +330,6 @@ else
 			fi
 		fi
 	fi
-	rm -f /var/lib/mysql/auto-recovery.flag
 fi
 
 # Support "truly healthy" healthchecks by listening on a new port (forwarded to the main healthcheck)
