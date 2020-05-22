@@ -50,7 +50,7 @@ RUN set -x \
       MariaDB-backup \
     && yum clean all
 
-COPY *.sh                    /usr/local/bin/
+COPY bin/*.sh                /usr/local/bin/
 COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
 COPY primary-component.sql   /
 COPY my.cnf                  /etc/
