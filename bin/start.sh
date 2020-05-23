@@ -470,15 +470,24 @@ galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
 	-availWhenReadOnly=false \
 	-pidfile=/var/run/galera-healthcheck-1.pid >/dev/null &
 
+#ncat --listen --keep-open --send-only 8083 -c "/tmp/test.sh type=readiness availWhenDonor=false availWhenReadOnly=false" &
+#echo $! >>/var/run/galera-healthcheck-2.pid
+
+
 # Port 8081 reports healthy as long as the server is synced or donor/desynced state
 # Use this one to help other nodes determine cluster state before launching server
-echo "STARTING HEALTH CHECK ON PORT 8081"
-galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
-	-port=8081 \
-	-availWhenDonor=true \
-	-availWhenReadOnly=true \
-	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
+echo "STARTING LIVENESS HEALTH CHECK ON PORT 8081"
+#galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
+#	-port=8081 \
+#	-availWhenDonor=true \
+#	-availWhenReadOnly=true \
+#	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
+
+ncat --listen --keep-open --send-only 8081 -c "/usr/local/bin/galera-health,sh type=liveness" &
+echo $! >>/var/run/galera-healthcheck-2.pid
+
 echo "STARTED HEALTH CHECKS"
+
 
 # Run automated upgrades
 # Script runs in the background waiting for the service to become available

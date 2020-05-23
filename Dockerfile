@@ -62,8 +62,6 @@ RUN set -ex ;\
 RUN /usr/local/bin/fix-permissions.sh /var/lib/   && \
     /usr/local/bin/fix-permissions.sh /var/run/
 
-EXPOSE 3306 3309 4444 4567 4567/udp 4568 8080 8081
-
 USER 100020100
 
 ENV SST_METHOD=mariabackup
