@@ -463,14 +463,14 @@ startProcess
 # Port 8080 only reports healthy when ready to serve clients
 # Use this one for load balancer health checks
 echo "STARTING HEALTH CHECK ON PORT 8080"
-galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
-	-port=8080 \
-	-availWhenDonor=false \
-	-availWhenReadOnly=false \
-	-pidfile=/var/run/galera-healthcheck-1.pid >/dev/null &
+#galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
+#	-port=8080 \
+#	-availWhenDonor=false \
+#	-availWhenReadOnly=false \
+#	-pidfile=/var/run/galera-healthcheck-1.pid >/dev/null &
 
-#ncat --listen --keep-open --send-only 8083 -c "/tmp/test.sh type=readiness availWhenDonor=false availWhenReadOnly=false" &
-#echo $! >>/var/run/galera-healthcheck-2.pid
+ncat --listen --keep-open --send-only 8080 -c "/usr/local/bin/galera-health.sh type=readiness  availWhenDonor=false availWhenReadOnly=false" &
+echo $! >>/var/run/galera-healthcheck-2.pid
 
 # Port 8081 reports healthy as long as the server is synced or donor/desynced state
 # Use this one to help other nodes determine cluster state before launching server
