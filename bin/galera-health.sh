@@ -101,19 +101,17 @@ status=$(mariadb $MARIADB_OPTS -h$MARIADB_ROOT_HOST -uroot -p$MARIADB_ROOT_PASSW
 
 if [ $READINESS -eq 1 ]
 then
-	# A node is ready when it reaches Synced
-  if [ $status -eq 4 ]
+	# A node is ready when it reaches Synced or when it is a Donor if availWhenDonor = true
+  if [[ "${status}" == "4" ]] || [[ "${status}" == "2" && ${availWhenDonor} == "true" ]]
   then
-    if [[ "$availWhenReadOnly" == "true" ]]
-    then
-  		readonly=$(mariadb $MYSQL_OPTS -h$MARIADB_ROOT_HOST -uroot -p$MARIADB_ROOT_PASSWORD -e "$READONLY_QUERY;" 2>/dev/null | awk '{print $2;}')
-      [[ $? -ne 0 ]] && server_unavailable
 
-      if [[ "$readonly" == "YES" ]] || [[ "$readonly" == "ON" ]]
-      then
-        server_readonly
-      fi
+    if [[ ${availWhenReadOnly} == "true" ]]
+    then
+      readonly=$(mariadb $MYSQL_OPTS -h$MARIADB_ROOT_HOST -uroot -p$MARIADB_ROOT_PASSWORD -e "$READONLY_QUERY;" 2>/dev/null | awk '{print $2;}')
+      [[ $? -ne 0 ]] && server_unavailable
+      [[ "${readonly}" == "ON" ]] &&  server_readonly
     fi
+
 		server_synced
   else
     server_notsynced
@@ -139,7 +137,7 @@ else
 # if script is not running as a readiness or liveness check
     if [[ "${status}" == "4" ]] || [[ "${status}" == "2" && ${availWhenDonor} == "true" ]]
     then
-        if [[ $availWhenReadOnly -eq 0 ]]
+        if [[ ${availWhenReadOnly} == "true" ]]
         then
           readonly=$(mariadb $MYSQL_OPTS -h$MARIADB_ROOT_HOST -uroot -p$MARIADB_ROOT_PASSWORD -e "$READONLY_QUERY;" 2>/dev/null | awk '{print $2;}')
           [[ $? -ne 0 ]] && server_unavailable
