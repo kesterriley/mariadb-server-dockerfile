@@ -42,7 +42,6 @@ RUN set -x \
     && yum clean all
 
 COPY bin/*.sh                /usr/local/bin/
-COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
 COPY my.cnf                  /etc/
 
 RUN set -ex ;\

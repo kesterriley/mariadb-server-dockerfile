@@ -4,8 +4,6 @@
 
 ## MariaDB 10.4 server on CentOS
 
-[![Docker Hub; kesterriley/mdb-test-10-4-server](https://images.microbadger.com/badges/image/nimmis/alpine-mariadb.svg)](https://hub.docker.com/repository/docker/kesterriley/mdb-test-10-4-server)
-
 kesterriley/mdb-test-10-4-MaxScale
 
 This docker file is built and pushed to dockerhub via circleci on commit.
