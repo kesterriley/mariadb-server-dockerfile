@@ -489,7 +489,8 @@ echo "STARTED HEALTH CHECKS"
 # Run automated upgrades
 # Script runs in the background waiting for the service to become available
 # If an upgrade is required this will run.
-run-upgrades.sh || true &
+
+#run-upgrades.sh || true &
 
 mariadb_control.sh \
 $MARIADB_MODE_ARGS \
