@@ -483,7 +483,7 @@ echo "STARTING LIVENESS HEALTH CHECK ON PORT 8081"
 #	-availWhenReadOnly=true \
 #	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
 
-ncat --listen --keep-open --send-only 8081 -c "/usr/local/bin/galera-health,sh type=liveness" &
+ncat --listen --keep-open --send-only 8081 -c "/usr/local/bin/galera-health.sh type=liveness" &
 echo $! >>/var/run/galera-healthcheck-2.pid
 
 echo "STARTED HEALTH CHECKS"
