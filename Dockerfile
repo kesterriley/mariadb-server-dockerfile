@@ -50,25 +50,22 @@ RUN set -x \
 COPY bin/*.sh                /usr/local/bin/
 COPY my.cnf                  /etc/
 
-RUN set -ex ;\
-    mkdir -p /etc/my.cnf.d ;\
-    chown -R root:root /etc/my.cnf.d ;\
-    chown -R root:root  /etc/my.cnf ; \
-    chmod -R 644 /etc/my.cnf.d ;\
-    chmod -R 644 /etc/my.cnf ;\
-    chmod -R 777 /usr/local/bin/*.sh ;\
-    sed -i '$d' /etc/passwd ; \
-    rm -rf /var/lib/mysql ; \
-    chmod g=u /etc/passwd ; \
-    find /etc/my.cnf.d/ -name '*.cnf' -print0 \
+RUN set -ex \
+    && mkdir -p /etc/my.cnf.d \
+    && chown -R root:root /etc/my.cnf.d \
+    && chown -R root:root  /etc/my.cnf \
+    && chmod -R 644 /etc/my.cnf.d \
+    && chmod -R 644 /etc/my.cnf \
+    && chmod -R 777 /usr/local/bin/*.sh \
+    && sed -i '$d' /etc/passwd \
+    && rm -rf /var/lib/mysql \
+    && chmod g=u /etc/passwd \
+    && find /etc/my.cnf.d/ -name '*.cnf' -print0 \
         | xargs -0 grep -lZE '^(bind-address|log)' \
-        | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/'; \
+        | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
     && /usr/local/bin/fix-permissions.sh /var/lib/  \
     && /usr/local/bin/fix-permissions.sh /var/run/
 
 USER 100020100
-
-ENV SST_METHOD=mariabackup
-
 STOPSIGNAL SIGTERM
 ENTRYPOINT ["start.sh"]
