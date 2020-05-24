@@ -240,6 +240,22 @@ function setupreplication () {
 
 }
 
+function startReadinessHealthCheck () {
+  # Port 8080 only reports healthy when ready to serve clients
+  # Use this one for load balancer health checks
+  echo "STARTING HEALTH CHECK ON PORT 8080"
+  ncat --listen --keep-open --send-only 8080 -c "/usr/local/bin/galera-health.sh type=readiness  availWhenDonor=false availWhenReadOnly=false" &
+  echo $! >>/var/run/galera-healthcheck-2.pid
+}
+
+function startLivenessHealthCheck () {
+  # Port 8081 reports healthy as long as the server is synced or donor/desynced state
+  # Use this one to help other nodes determine cluster state before launching server
+  echo "STARTING LIVENESS HEALTH CHECK ON PORT 8081"
+  ncat --listen --keep-open --send-only 8081 -c "/usr/local/bin/galera-health.sh type=liveness" &
+  echo $! >>/var/run/galera-healthcheck-2.pid
+}
+
 function standalone_install () {
 
 
@@ -261,6 +277,8 @@ function standalone_install () {
      mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
   fi
 
+  startReadinessHealthCheck
+  startLivenessHealthCheck
   startBackupStream
 
   echo "Waiting for MariaDB to exit"
@@ -459,30 +477,8 @@ case $START_MODE in
 esac
 
 startProcess
-
-# Port 8080 only reports healthy when ready to serve clients
-# Use this one for load balancer health checks
-echo "STARTING HEALTH CHECK ON PORT 8080"
-#galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
-#	-port=8080 \
-#	-availWhenDonor=false \
-#	-availWhenReadOnly=false \
-#	-pidfile=/var/run/galera-healthcheck-1.pid >/dev/null &
-
-ncat --listen --keep-open --send-only 8080 -c "/usr/local/bin/galera-health.sh type=readiness  availWhenDonor=false availWhenReadOnly=false" &
-echo $! >>/var/run/galera-healthcheck-2.pid
-
-# Port 8081 reports healthy as long as the server is synced or donor/desynced state
-# Use this one to help other nodes determine cluster state before launching server
-echo "STARTING LIVENESS HEALTH CHECK ON PORT 8081"
-#galera-healthcheck -user=system -password="$SYSTEM_PASSWORD" \
-#	-port=8081 \
-#	-availWhenDonor=true \
-#	-availWhenReadOnly=true \
-#	-pidfile=/var/run/galera-healthcheck-2.pid >/dev/null &
-
-ncat --listen --keep-open --send-only 8081 -c "/usr/local/bin/galera-health.sh type=liveness" &
-echo $! >>/var/run/galera-healthcheck-2.pid
+startReadinessHealthCheck
+startLivenessHealthCheck
 
 echo "STARTED HEALTH CHECKS"
 
