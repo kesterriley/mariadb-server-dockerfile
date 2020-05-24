@@ -2,13 +2,21 @@ FROM centos:centos7
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
-LABEL maintainer="Kester Riley <kesterriley@hotmail.com>" \
-      description="MariaDB 10.4 Server" \
-      name="mariadb-server" \
-      url="https://mariadb.com/kb/en/mariadb-1040-release-notes/" \
-      architecture="AMD64/x86_64" \
-      version="10.4.01" \
-      date="2020-01-11"
+# Build-time metadata as defined at http://label-schema.org
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="mariadb-server" \
+      org.label-schema.description="MariaDB 10.4 Server" \
+      org.label-schema.url="https://mariadb.com/kb/en/mariadb-1040-release-notes/" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/kesterriley/mariadb-server-dockerfile" \
+      org.label-schema.vendor="e.g. ACME Inc" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0" \
+      maintainer="Kester Riley <kesterriley@hotmail.com>" \
+      architecture="AMD64/x86_64" 
 
 RUN set -x \
     && yum update -y \
