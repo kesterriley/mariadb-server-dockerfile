@@ -39,6 +39,7 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push $IMAGE_NAME:latest
+            curl -X POST $MICROBADGER_WEBHOOK
   publish-tag:
     executor: docker-publisher
     steps:
@@ -56,6 +57,7 @@ jobs:
             docker tag $IMAGE_NAME:latest $IMAGE_NAME:$IMAGE_TAG
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$IMAGE_TAG
+            curl -X POST $MICROBADGER_WEBHOOK
 workflows:
   version: 2
   build-master:
