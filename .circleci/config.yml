@@ -2,7 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     environment:
-      IMAGE_NAME: kesterriley/mdb-test-10-4-server
+      IMAGE_NAME: IMAGE_NAME: kesterriley/mdb-test-10-4-server
     docker:
       - image: circleci/buildpack-deps:stretch
 jobs:
@@ -14,10 +14,7 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            docker build --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-            --build-arg VCS_REF=`git rev-parse --short HEAD` \
-            --build-arg VERSION=`cat VERSION` \
-            -t $IMAGE_NAME:latest .
+            docker build -t $IMAGE_NAME:latest .
       - run:
           name: Archive Docker image
           command: docker save -o image.tar $IMAGE_NAME
@@ -38,8 +35,10 @@ jobs:
           name: Publish Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            IMAGE_TAG="0.0.${CIRCLE_BUILD_NUM}"
+            docker tag $IMAGE_NAME:latest $IMAGE_NAME:$IMAGE_TAG
             docker push $IMAGE_NAME:latest
-            curl -X POST $MICROBADGER_WEBHOOK
+            docker push $IMAGE_NAME:$IMAGE_TAG
   publish-tag:
     executor: docker-publisher
     steps:
@@ -57,7 +56,6 @@ jobs:
             docker tag $IMAGE_NAME:latest $IMAGE_NAME:$IMAGE_TAG
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$IMAGE_TAG
-            curl -X POST $MICROBADGER_WEBHOOK
 workflows:
   version: 2
   build-master:
