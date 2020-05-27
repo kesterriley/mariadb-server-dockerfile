@@ -1,13 +1,13 @@
 version: 2.1
+orbs:
+  microscanner: 'aquasecurity/microscanner@dev:0.1.1'
 executors:
   docker-publisher:
     environment:
       IMAGE_NAME: kesterriley/mdb-test-10-4-server
-    docker:
-      - image: circleci/buildpack-deps:stretch
 jobs:
   build:
-    executor: docker-publisher
+    executor: microscanner/default
     steps:
       - checkout
       - setup_remote_docker
@@ -45,7 +45,7 @@ jobs:
           at: /tmp/workspace
       - setup_remote_docker
       - run:
-          name: Load archived Docker image
+          name: Load archived Docker image 
           command: docker load -i /tmp/workspace/image.tar
       - run:
           name: Publish Docker Image to Docker Hub
@@ -80,9 +80,14 @@ workflows:
           filters:
             branches:
               only: master
-      - publish-latest:
+      - microscanner/scan-image:
           requires:
             - build
+          context: myContext
+          image: '$IMAGE_NAME:$IMAGE_TAG'
+      - publish-latest:
+          requires:
+            - microscanner/scan-image
           filters:
             branches:
               only: master
@@ -94,9 +99,14 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - publish-tag:
+      - microscanner/scan-image:
           requires:
             - build
+          context: myContext
+          image: '$IMAGE_NAME:$IMAGE_TAG'
+      - publish-tag:
+          requires:
+            - microscanner/scan-image
           filters:
             tags:
               only: /^v.*/
