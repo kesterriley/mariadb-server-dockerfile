@@ -29,7 +29,7 @@ jobs:
           at: /tmp/workspace
       - setup_remote_docker
       - run:
-          name: Load archived Docker image
+          name: Load archived Docker image 
           command: docker load -i /tmp/workspace/image.tar
       - run:
           name: Publish Docker Image to Docker Hub
@@ -87,7 +87,7 @@ workflows:
           requires:
             - build
           context: myContext
-          image: '$IMAGE_NAME:$IMAGE_TAG'              
+          image: '$IMAGE_NAME:$IMAGE_TAG'
       - publish-tag:
           requires:
             - microscanner/scan-image
