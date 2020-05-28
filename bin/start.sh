@@ -269,12 +269,12 @@ function standalone_install () {
 
   waitforservice
 
-  if [[ -f /var/lib/mysql/servercloned ]]; then
-
-     echo "This server was cloned from another, configuring replica"
-     setupreplication
-     mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
-  fi
+  # if [[ -f /var/lib/mysql/servercloned ]]; then
+  #
+  #    echo "This server was cloned from another, configuring replica"
+  #    setupreplication
+  #    mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
+  # fi
 
   startReadinessHealthCheck
   startLivenessHealthCheck
