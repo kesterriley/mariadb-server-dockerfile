@@ -217,8 +217,10 @@ function setupreplication () {
     if [[ -n $slavegtidpos ]]; then
 
       if [[ -n $MASTERHOST ]]; then
+        echo "** Setting replication type to: $REPL_TYPE **"
+
         echo "SET GLOBAL gtid_slave_pos = $slavegtidpos;" > /var/lib/mysql/change_master_to.sql.in
-        echo "CHANGE MASTER '${MASTERHOST%%.*}' TO master_use_gtid = slave_pos, MASTER_HOST='$MASTERHOST', MASTER_USER='$REPLICATION_USER', MASTER_PASSWORD='$REPLICATION_USER_PASSWORD', MASTER_CONNECT_RETRY=10; START SLAVE '${MASTERHOST%%.*}';" >> /var/lib/mysql/change_master_to.sql.in
+        echo "CHANGE MASTER '${MASTERHOST%%.*}' TO master_use_gtid = $REPL_TYPE, MASTER_HOST='$MASTERHOST', MASTER_USER='$REPLICATION_USER', MASTER_PASSWORD='$REPLICATION_USER_PASSWORD', MASTER_CONNECT_RETRY=10; START SLAVE '${MASTERHOST%%.*}';" >> /var/lib/mysql/change_master_to.sql.in
       else
         echo "MASTERHOST is not set, check configuration."
       fi
@@ -272,6 +274,7 @@ function standalone_install () {
   if [[ -f /var/lib/mysql/servercloned ]]; then
 
      echo "This server was cloned from another, configuring replica"
+     REPL_TYPE=current_pos
      setupreplication
      mv /var/lib/mysql/servercloned /var/lib/mysql/servercloned.OLD
   fi
@@ -501,6 +504,7 @@ waitforservice
 if [[ -f /var/lib/mysql/serverClonedFromRemoteMaster ]]; then
 
    echo "This server was cloned from another, configuring replica"
+   REPL_TYPE=slave_pos
    setupreplication
    mv /var/lib/mysql/serverClonedFromRemoteMaster /var/lib/mysql/serverClonedFromRemoteMaster.OLD
 fi
