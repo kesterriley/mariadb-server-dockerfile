@@ -1,5 +1,4 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CircleCI](https://circleci.com/gh/kesterriley/maxscale-server-dockerfile.svg?style=shield)](https://circleci.com/gh/kesterriley/maxscale-server-dockerfile)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![CircleCI](https://circleci.com/gh/kesterriley/mariadb-server-dockerfile.svg?style=shield&circle-token=f24991fca56348b773d25ccc13661125db27c352)](https://circleci.com/gh/kesterriley/mariadb-server-dockerfile)
 
 
 ## MariaDB 10.4 server on CentOS

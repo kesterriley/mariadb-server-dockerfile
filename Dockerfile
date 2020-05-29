@@ -47,8 +47,8 @@ RUN set -x \
     && yum clean all \
     && rm -rf /var/cache/yum
 
-COPY bin/*.sh                /usr/local/bin/
-COPY my.cnf                  /etc/
+COPY bin/*.sh /usr/local/bin/
+COPY my.cnf /etc/
 
 RUN set -ex \
     && mkdir -p /etc/my.cnf.d \
