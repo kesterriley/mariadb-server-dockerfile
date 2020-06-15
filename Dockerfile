@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM fedora:latest
 ENV MARIADB_SERVER_VERSION 10.4
 
 # Build-time metadata as defined at http://label-schema.org
