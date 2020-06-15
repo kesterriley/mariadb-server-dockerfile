@@ -20,8 +20,8 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 RUN set -x \
     && groupadd -r mysql && useradd -r -g mysql mysql \
-#    && yum update -y \
-    && yum install -y epel-release \
+    && yum update -y \
+#    && yum install -y epel-release \
     && yum install -y \
       wget \
       curl \
