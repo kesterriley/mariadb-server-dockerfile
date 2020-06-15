@@ -87,7 +87,7 @@ workflows:
   version: 2
   build-master:
     jobs:
-      - scan
+      # - scan
       - build:
           filters:
             branches:
