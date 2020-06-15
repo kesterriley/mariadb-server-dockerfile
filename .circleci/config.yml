@@ -25,7 +25,6 @@ jobs:
           root: .
           paths:
             - ./image.tar
-
   scan:
     docker:
       - image: docker:18.06.1-ce-git
