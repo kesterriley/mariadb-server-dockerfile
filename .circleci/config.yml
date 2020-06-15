@@ -18,16 +18,39 @@ jobs:
                          --build-arg VCS_REF=`git rev-parse --short HEAD` \
                          --build-arg VERSION=`cat VERSION` \
                          -t $IMAGE_NAME:latest .
-      - run:
-          name: Scan Image
-          command: docker run --rm -v $HOME:/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --ignore-unfixed $IMAGE_NAME:latest
-      - run:
+    - run:
           name: Archive Docker image
           command: docker save -o image.tar $IMAGE_NAME
       - persist_to_workspace:
           root: .
           paths:
             - ./image.tar
+
+  scan:
+    docker:
+      - image: docker:18.06.1-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install dependencies
+          command: apk add --update alpine-sdk
+      - run:
+          name: Install trivy
+          command: |
+            apk add --update-cache --upgrade curl rpm
+            VERSION=$(
+                curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | \
+                grep '"tag_name":' | \
+                sed -E 's/.*"v([^"]+)".*/\1/'
+            )
+            wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz
+            tar zxvf trivy_${VERSION}_Linux-64bit.tar.gz
+            mv trivy /usr/local/bin
+      - run:
+          name: trivy scan
+          command: make scan
+
   publish-latest:
     executor: docker-publisher
     steps:
@@ -66,6 +89,7 @@ workflows:
   version: 2
   build-master:
     jobs:
+      - scan
       - build:
           filters:
             branches:
