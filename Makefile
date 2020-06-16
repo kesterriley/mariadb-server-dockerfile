@@ -16,19 +16,9 @@ build:
 scan:
 	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --clear-cache --ignore-unfixed $(IMAGE_NAME)
 
-dockerSave:
-	docker save -o image.tar $(IMAGE_NAME)
-
-publishLatest:
-		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
-		IMAGE_TAG="0.0.$(CIRCLE_BUILD_NUM)"
-		docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
-		docker push $(IMAGE_NAME):latest
-		docker push $(IMAGE_NAME):$(IMAGE_TAG)
-
-publishTagged:
-		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
-		IMAGE_TAG=$(CIRCLE_TAG/v/'')
-		docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
-		docker push $(IMAGE_NAME):latest
-		docker push $(IMAGE_NAME):$(IMAGE_TAG)
+publish:
+		echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+		IMAGE_TAG="0.0.${CIRCLE_BUILD_NUM}"
+		docker tag $IMAGE_NAME:latest $IMAGE_NAME:$IMAGE_TAG
+		docker push $IMAGE_NAME:latest
+		docker push $IMAGE_NAME:$IMAGE_TAG
