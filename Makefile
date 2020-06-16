@@ -21,7 +21,7 @@ build:
 	docker build --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 							 --build-arg VCS_REF=`git rev-parse --short HEAD` \
 							 --build-arg VERSION=`cat VERSION` \
-							 -t $IMAGE_NAME:latest .
+							 -t $(IMAGE_NAME):latest .
 #
 # push-to-gcr: configure-gcloud-cli
 # 	docker tag $(IMAGE) $(GCR_REPO)/$(IMAGE)
