@@ -20,7 +20,7 @@ dockerSave:
 	docker save -o image.tar $(IMAGE_NAME)
 
 dockerLoad:
-	docker load -i image.tar
+	docker load -i /tmp/workspace/image.tar
 
 publishLatest:
 		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
