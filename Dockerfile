@@ -35,6 +35,11 @@ RUN set -x \
       psmisc \
       hostname \
       which \
+    && yum remove -y \
+      sqlite \
+      rsync \
+      perl \
+      glib2 \  
     && rm -rf /tmp/* \
     && mkdir /etc/my.cnf.d \
     && curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --mariadb-server-version="mariadb-$MARIADB_SERVER_VERSION" \
