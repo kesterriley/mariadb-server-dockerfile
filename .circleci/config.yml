@@ -18,36 +18,40 @@ jobs:
           name: Scan Image
           command: make scan
       - run:
-          name: Archive Docker image
-          command: make dockerSave
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image.tar
-  publish-latest:
-    executor: docker-publisher
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - setup_remote_docker
-      - run:
-          name: Load archived Docker image
-          command: docker load -i /tmp/workspace/image.tar
-      - run:
           name: Publish Docker Image to Docker Hub
           command: make publishLatest
-  publish-tag:
-    executor: docker-publisher
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - setup_remote_docker
-      - run:
-          name: Load archived Docker image
-          command: make dockerLoad
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: make publishTagged
+
+      # - run:
+      #     name: Archive Docker image
+      #     command: make dockerSave
+      # - persist_to_workspace:
+      #     root: .
+      #     paths:
+      #       - ./image.tar
+  # publish-latest:
+  #   executor: docker-publisher
+  #   steps:
+  #     - attach_workspace:
+  #         at: /tmp/workspace
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Load archived Docker image
+  #         command: docker load -i /tmp/workspace/image.tar
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: make publishLatest
+  # publish-tag:
+  #   executor: docker-publisher
+  #   steps:
+  #     - attach_workspace:
+  #         at: /tmp/workspace
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Load archived Docker image
+  #         command: make dockerLoad
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: make publishTagged
 workflows:
   version: 2
   build-master:
@@ -56,12 +60,12 @@ workflows:
           filters:
             branches:
               only: master
-      - publish-latest:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+      # - publish-latest:
+      #     requires:
+      #       - build
+      #     filters:
+      #       branches:
+      #         only: master
   build-tags:
     jobs:
       - build:
@@ -70,11 +74,11 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - publish-tag:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
+      # - publish-tag:
+      #     requires:
+      #       - build
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #       branches:
+      #         ignore: /.*/
