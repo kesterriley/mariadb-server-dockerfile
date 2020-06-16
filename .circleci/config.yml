@@ -95,6 +95,7 @@ workflows:
       - publish-latest:
           requires:
             - build
+            - scan
           filters:
             branches:
               only: master

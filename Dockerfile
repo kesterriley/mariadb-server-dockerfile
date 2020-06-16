@@ -1,4 +1,4 @@
-FROM centos:centos8
+FROM centos:centos7
 ENV MARIADB_SERVER_VERSION 10.4
 
 # Build-time metadata as defined at http://label-schema.org
@@ -20,7 +20,7 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 RUN set -x \
     && groupadd -r mysql && useradd -r -g mysql mysql \
-    && yum update -y \
+#    && yum update -y \
     && yum install -y epel-release \
     && yum install -y \
       wget \
