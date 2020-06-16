@@ -8,11 +8,7 @@
 #------------------------------------------------------------------
 
 installTrivy:
-	VERSION=$(
-		curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | \
-		grep '"tag_name":' | \
-		sed -E 's/.*"v([^"]+)".*/\1/'
-	)
+	VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 	wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz
 	tar zxvf trivy_${VERSION}_Linux-64bit.tar.gz
 	mv trivy /tmp/
@@ -24,7 +20,7 @@ build:
 							 -t $(IMAGE_NAME):latest .
 
 scan: installTrivy
-	trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE_NAME)
+	/tmp/trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE_NAME)
 # docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --clear-cache --ignore-unfixed $(IMAGE_NAME)
 
 publish:
