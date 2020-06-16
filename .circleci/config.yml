@@ -28,11 +28,11 @@ jobs:
             )
             wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz
             tar zxvf trivy_${VERSION}_Linux-64bit.tar.gz
-            mv trivy /usr/local/bin
+            mv trivy /tmp
       - run:
           name: Scan Image
 #          command: docker run --rm -v $HOME:/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --ignore-unfixed $IMAGE_NAME:latest
-          command: trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $IMAGE_NAME:latest
+          command: /tmp/trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $IMAGE_NAME:latest
       - run:
           name: Archive Docker image
           command: docker save -o image.tar $IMAGE_NAME
