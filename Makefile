@@ -18,7 +18,7 @@ scan:
 	# trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE)
 
 dockerSave:
-	docker save -o $(IMAGE_NAME).tar $(IMAGE_NAME)
+	docker save -o /tmp/workspace/$(IMAGE_NAME).tar $(IMAGE_NAME)
 
 dockerLoad:
 	docker load -i /tmp/workspace/$(IMAGE_NAME).tar
