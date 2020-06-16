@@ -34,5 +34,6 @@ build:
 # 	gcloud --quiet config set project $(GOOGLE_PROJECT_ID)
 # 	gcloud --quiet config set compute/zone $(GOOGLE_COMPUTE_ZONE)
 
-scan: build
-	trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE)
+scan:
+	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --ignore-unfixed $(IMAGE_NAME):latest
+	# trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE)
