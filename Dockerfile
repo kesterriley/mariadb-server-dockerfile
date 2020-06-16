@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM centos:centos8
 ENV MARIADB_SERVER_VERSION 10.4
 
 # Build-time metadata as defined at http://label-schema.org
@@ -35,10 +35,6 @@ RUN set -x \
       psmisc \
       hostname \
       which \
-    && yum remove -y \
-      sqlite \
-      rsync \
-      perl \
     && rm -rf /tmp/* \
     && mkdir /etc/my.cnf.d \
     && curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --mariadb-server-version="mariadb-$MARIADB_SERVER_VERSION" \
