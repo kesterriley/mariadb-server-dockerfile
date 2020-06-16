@@ -35,6 +35,7 @@ RUN set -x \
       psmisc \
       hostname \
       which \
+      yum-utils \
     && rm -rf /tmp/* \
     && mkdir /etc/my.cnf.d \
     && curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --mariadb-server-version="mariadb-$MARIADB_SERVER_VERSION" \
@@ -44,6 +45,8 @@ RUN set -x \
            galera-4 \
            MariaDB-shared \
            MariaDB-backup \
+    && package-cleanup --leaves
+    && yum remove `package-cleanup --leaves`
     && yum clean all \
     && rm -rf /var/cache/yum
 
