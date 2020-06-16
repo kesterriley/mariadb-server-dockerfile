@@ -14,8 +14,7 @@ build:
 							 -t $(IMAGE_NAME):latest .
 
 scan:
-	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --ignore-unfixed $(IMAGE_NAME):latest
-	# trivy --light -s "UNKNOWN,MEDIUM,HIGH,CRITICAL" --exit-code 1 $(IMAGE)
+	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --clear-cache --ignore-unfixed $(IMAGE_NAME)
 
 dockerSave:
 	docker save -o image.tar $(IMAGE_NAME)
