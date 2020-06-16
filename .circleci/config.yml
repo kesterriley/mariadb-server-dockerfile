@@ -32,7 +32,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Load archived Docker image
-          command: make dockerLoad
+          command: docker load -i /tmp/workspace/image.tar
       - run:
           name: Publish Docker Image to Docker Hub
           command: make publishLatest

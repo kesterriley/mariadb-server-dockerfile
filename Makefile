@@ -19,9 +19,6 @@ scan:
 dockerSave:
 	docker save -o image.tar $(IMAGE_NAME)
 
-dockerLoad:
-	docker load -i /tmp/workspace/image.tar
-
 publishLatest:
 		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
 		IMAGE_TAG="0.0.$(CIRCLE_BUILD_NUM)"
