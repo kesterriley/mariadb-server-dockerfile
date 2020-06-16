@@ -45,8 +45,8 @@ RUN set -x \
            galera-4 \
            MariaDB-shared \
            MariaDB-backup \
-    && package-cleanup --leaves
-    && yum remove `package-cleanup --leaves`
+    && package-cleanup --leaves \
+    && yum remove `package-cleanup --leaves` \
     && yum clean all \
     && rm -rf /var/cache/yum
 
