@@ -18,7 +18,7 @@ scan:
 
 publish:
 		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
-		IMAGE_TAG="0.0.${CIRCLE_BUILD_NUM}"
+		IMAGE_TAG="0.0.$(CIRCLE_BUILD_NUM)"
 		docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
 		docker push $(IMAGE_NAME):latest
 		docker push $(IMAGE_NAME):$(IMAGE_TAG)
