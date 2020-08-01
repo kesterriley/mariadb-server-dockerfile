@@ -292,7 +292,7 @@ function initiate_mariabackup () {
 
     echo "Creating Backup Directory"
     lv_date_time=$(date +%Y%m%d_%H%M%S)
-    mkdir $BACKUPCLUSTERDIR/$lv_date_time
+    mkdir -p $BACKUPCLUSTERDIR/$lv_date_time
 
     echo "Backing up from $BACKUPCLUSTER to $BACKUPCLUSTERDIR/$lv_date_time"
     ncat --recv-only $BACKUPCLUSTER 3305 | mbstream -x -C $BACKUPCLUSTERDIR/$lv_date_time
