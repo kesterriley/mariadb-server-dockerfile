@@ -12,9 +12,6 @@ echo "===> Starting Application"
 
 mkdir -pv /var/lib/mysql
 
-# Exit on errors but report line number
-
-
 function err_report () {
 	echo "start.sh: Trapped error on line $1"
 	exit
@@ -246,7 +243,7 @@ function startReadinessHealthCheck () {
   # Use this one for load balancer health checks
   echo "STARTING HEALTH CHECK ON PORT 8080"
   ncat --listen --keep-open --send-only 8080 -c "/usr/local/bin/galera-health.sh type=readiness  availWhenDonor=false availWhenReadOnly=false" &
-  echo $! >>/var/run/galera-healthcheck-2.pid
+  echo $! >>/var/run/galera-healthcheck-1.pid
 }
 
 function startLivenessHealthCheck () {
@@ -258,7 +255,6 @@ function startLivenessHealthCheck () {
 }
 
 function standalone_install () {
-
 
   checkandclone
 
@@ -289,9 +285,36 @@ function standalone_install () {
 
 }
 
-#
-# Utility modes
-#
+function initiate_mariabackup () {
+
+  if [[ -n $BACKUPCLUSTER ]]; then
+
+
+    echo "Creating Backup Directory"
+    lv_date_time=$(date +%Y%m%d_%H%M%S)
+    mkdir $BACKUPCLUSTERDIR/$lv_date_time
+
+    echo "Backing up from $BACKUPCLUSTER to $BACKUPCLUSTERDIR/$lv_date_time"
+    ncat --recv-only $BACKUPCLUSTER 3305 | mbstream -x -C $BACKUPCLUSTERDIR/$lv_date_time
+    echo "Backup Streamed, now preparing"
+    mariabackup --prepare --target-dir=$BACKUPCLUSTERDIR/$lv_date_time
+    echo "MariaBackup completed"
+
+
+#TODO clearup old backups
+
+    echo "Goodbye"
+    exit
+  else
+      echo "BACKUPCLUSTER is not defined"
+      exit
+  fi
+
+
+
+}
+
+
 case "$1" in
 	sleep)
 		echo "Sleeping forever..."
@@ -305,6 +328,12 @@ case "$1" in
     echo "-------------- STARTING MODE: No Galera ---------------------"
     standalone_install
 		;;
+  mariabackup)
+  	echo "Starting a backup instance"
+  	shift 1
+    echo "-------------- STARTING MODE: mariabackup ---------------------"
+    initiate_mariabackup
+  	;;
 	bash)
 		shift 1
 		trap - TERM INT
@@ -316,7 +345,7 @@ case "$1" in
                 echo "-------------- STARTING MODE: $START_MODE ---------------------"
 		;;
 	*)
-		echo "sleep|no-galera|bash|seed|node <othernode>,..."
+		echo "sleep|no-galera|bash|seed|node|mariabackup <othernode>,..."
 		exit 1
 esac
 
