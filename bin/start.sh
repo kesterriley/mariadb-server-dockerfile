@@ -154,16 +154,54 @@ function startBackupStream ()
   fi
 }
 
+function restorefrombackup () {
+
+    if [[ -n $BACKUPTORESTORE ]]; then
+
+        echo "System will attempt to restore from a backup file."
+
+        if [[ -f $BACKUPTORESTORE ]]; then
+
+            echo "Have found Backup to Restore From: $BACKUPTORESTORE "
+
+            if [[ -d $BACKUPCLUSTERDIR/restore ]]; then
+              rm -rf $BACKUPCLUSTERDIR/restore
+            fi
+
+            mkdir -p $BACKUPCLUSTERDIR/restore
+            chmod 777 $BACKUPCLUSTERDIR/restore
+            echo "Uncompressing archive $BACKUPTORESTORE"
+            tar -zxf $BACKUPTORESTORE --directory $BACKUPCLUSTERDIR/restore
+            echo "Archive extracted to $BACKUPCLUSTERDIR/restore"
+            if [[ -d /var/lib/mysql/mysql ]]; then
+              echo "Data Directory already exists, removing it"
+              rm -rf /var/lib/mysql/*
+            fi
+            echo "Copying Back Archive"
+            mariabackup --copy-back --force-non-empty-directories --target-dir $BACKUPCLUSTERDIR/restore --datadir /var/lib/mysql/
+            echo "Archived Restored"
+            echo "Changing file ownership"
+            chown -R mysql:mysql /var/lib/mysql/
+        else
+          echo "Unable to find Backup to restore: $BACKUPTORESTORE "
+        fi
+    fi
+
+}
+
 function checkandclone () {
 
+  restorefrombackup
+
   if [[ -d /var/lib/mysql/mysql ]]; then
-    echo "This server already has a data directory, not cloning another server"
+    echo "This server already has a data directory, not cloning another server."
   elif [[ `hostname` =~ -([0-9]+)$ ]]; then
 
     ordinal=${BASH_REMATCH[1]}
     if [[ $ordinal -eq 0 ]]; then
 
       #Check the environment variable to see if it is not an empty string
+
       if [[ -n $CLONEFROMREMOTE ]]; then
         echo "Server has no data directory, and is a master server and it is set to clone"
         echo " ... from $CLONEFROMREMOTE"
