@@ -286,15 +286,18 @@ function standalone_install () {
 }
 
 function initiate_mariabackup () {
-
+set +e -m
   if [[ -n $BACKUPCLUSTER ]]; then
 
 
     echo "Creating Backup Directory"
     lv_date_time=$(date +%Y%m%d_%H%M%S)
-    rm -rf $(dirname $BACKUPCLUSTERDIR/$lv_date_time) \
-      && mkdir -p $(dirname $BACKUPCLUSTERDIR/$lv_date_time) \
-      && chmod 777 $(dirname $BACKUPCLUSTERDIR/$lv_date_time)
+    mkdir -p $BACKUPCLUSTERDIR/$lv_date_time
+    chmod 777 $BACKUPCLUSTERDIR/$lv_date_time
+
+    ls -lrt /
+    ls -lrt $BACKUPCLUSTERDIR/$lv_date_time
+    ls -lrt $BACKUPCLUSTERDIR/
 
     echo "Backing up from $BACKUPCLUSTER to $BACKUPCLUSTERDIR/$lv_date_time"
     ncat --recv-only $BACKUPCLUSTER 3305 | mbstream -x -C $BACKUPCLUSTERDIR/$lv_date_time
