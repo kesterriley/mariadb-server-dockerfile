@@ -295,18 +295,29 @@ set +e -m
     mkdir -p $BACKUPCLUSTERDIR/$lv_date_time
     chmod 777 $BACKUPCLUSTERDIR/$lv_date_time
 
-    ls -lrt /
-    ls -lrt $BACKUPCLUSTERDIR/$lv_date_time
-    ls -lrt $BACKUPCLUSTERDIR/
-
     echo "Backing up from $BACKUPCLUSTER to $BACKUPCLUSTERDIR/$lv_date_time"
     ncat --recv-only $BACKUPCLUSTER 3305 | mbstream -x -C $BACKUPCLUSTERDIR/$lv_date_time
     echo "Backup Streamed, now preparing"
     mariabackup --prepare --target-dir=$BACKUPCLUSTERDIR/$lv_date_time
     echo "MariaBackup completed"
 
+    echo "Compressing Backup to save disk space"
+    tar -czvf $lv_date_time.tar.gz $BACKUPCLUSTERDIR/$lv_date_time/
 
-#TODO clearup old backups
+    echo "Removing backup directory if compression worked"
+
+    if [[ -f $lv_date_time.tar.gz ]]
+    then
+       rm -rf $BACKUPCLUSTERDIR/$lv_date_time
+    fi
+
+    echo "Listing Backup Directory"
+    ls -lrt $BACKUPCLUSTERDIR/
+
+    if [[ -n $BACKUPPURGEDAYS ]]; then
+      echo "Checking for old backups older than $BACKUPPURGEDAYS and removing"
+      find $BACKUPCLUSTERDIR/*.tar.gz -type d -ctime +$BACKUPPURGEDAYS -exec rm -rf {} +
+    fi
 
     echo "Goodbye"
     exit
