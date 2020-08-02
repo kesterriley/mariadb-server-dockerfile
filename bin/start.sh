@@ -302,11 +302,11 @@ set +e -m
     echo "MariaBackup completed"
 
     echo "Compressing Backup to save disk space"
-    tar -czvf $lv_date_time.tar.gz $BACKUPCLUSTERDIR/$lv_date_time/
+    tar -czvf $BACKUPCLUSTERDIR/$lv_date_time.tar.gz $BACKUPCLUSTERDIR/$lv_date_time
 
     echo "Removing backup directory if compression worked"
 
-    if [[ -f $lv_date_time.tar.gz ]]
+    if [[ -f $BACKUPCLUSTERDIR/$lv_date_time.tar.gz ]]
     then
        rm -rf $BACKUPCLUSTERDIR/$lv_date_time
     fi
@@ -315,7 +315,7 @@ set +e -m
     ls -lrt $BACKUPCLUSTERDIR/
 
     if [[ -n $BACKUPPURGEDAYS ]]; then
-      echo "Checking for old backups older than $BACKUPPURGEDAYS and removing"
+      echo "Checking for old backups older than $BACKUPPURGEDAYS days and removing"
       find $BACKUPCLUSTERDIR/*.tar.gz -type d -ctime +$BACKUPPURGEDAYS -exec rm -rf {} +
     fi
 
