@@ -350,7 +350,7 @@ set +e -m
     fi
 
     echo "Listing Backup Directory"
-    ls -lrt $BACKUPCLUSTERDIR/
+    ls -lrth $BACKUPCLUSTERDIR/
 
     if [[ -n $BACKUPPURGEDAYS ]]; then
       echo "Checking for old backups older than $BACKUPPURGEDAYS days and removing"
