@@ -1,5 +1,6 @@
 FROM centos:centos7
 ENV MARIADB_SERVER_VERSION 10.4
+ENV MARIADB_TOKEN XXXXXXXX
 
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
@@ -41,7 +42,7 @@ RUN set -x \
     && wget https://dlm.mariadb.com/enterprise-release-helpers/mariadb_es_repo_setup \
     && echo "99c7f4a3473a397d824d5f591274c2a4f5ebf6dc292eea154800bbaca04ddc7e mariadb_es_repo_setup" | sha256sum -c - \
     && chmod +x mariadb_es_repo_setup \
-    && ./mariadb_es_repo_setup --token="7eb346a3-494f-4c8e-ae33-38832387316e" --apply --mariadb-server-version="$MARIADB_SERVER_VERSION" \
+    && ./mariadb_es_repo_setup --token="$MARIADB_TOKEN" --apply --mariadb-server-version="$MARIADB_SERVER_VERSION" \
     && yum install -y \
            MariaDB-server \
            MariaDB-client \
