@@ -3,6 +3,10 @@
 
 # A Script to check the health of a Galera Cluster
 
+# Example of usage:
+#  ncat --listen --keep-open --send-only 8080 -c "/usr/local/bin/galera-health.sh type=readiness  availWhenDonor=false availWhenReadOnly=false" &
+
+
 MARIADB_OPTS="-N -q -A --connect-timeout=10"
 STATE_QUERY="SHOW GLOBAL STATUS WHERE VARIABLE_NAME='wsrep_local_state'"
 READONLY_QUERY="SHOW GLOBAL VARIABLES WHERE variable_name='read_only'"
