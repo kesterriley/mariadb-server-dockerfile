@@ -14,7 +14,7 @@ build:
 							 -t $(IMAGE_NAME):latest .
 
 scan:
-	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy --clear-cache --ignore-unfixed $(IMAGE_NAME)
+	docker run --rm -v $(HOME):/root/.cache/ -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy $(IMAGE_NAME)
 
 publish:
 		echo "$(DOCKERHUB_PASS)" | docker login -u "$(DOCKERHUB_USERNAME)" --password-stdin
