@@ -2,7 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     environment:
-      IMAGE_NAME: kesterriley/mdb-test-10-4-server
+      IMAGE_NAME: kesterriley/mdb-test-10-6-server
     docker:
       - image: cimg/base
 jobs:
