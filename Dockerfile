@@ -1,5 +1,5 @@
 FROM centos:centos7
-ENV MARIADB_SERVER_VERSION 10.4
+ENV MARIADB_SERVER_VERSION 10.6
 
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
@@ -7,8 +7,8 @@ ARG VCS_REF
 ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="mariadb-server" \
-      org.label-schema.description="MariaDB 10.4 Server" \
-      org.label-schema.url="https://mariadb.com/kb/en/mariadb-1040-release-notes/" \
+      org.label-schema.description="MariaDB 10.6 Server" \
+      org.label-schema.url="https://mariadb.com/kb/en/mariadb-1060-release-notes/" \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url="https://github.com/kesterriley/mariadb-server-dockerfile" \
       org.label-schema.vendor="Kester Riley" \
