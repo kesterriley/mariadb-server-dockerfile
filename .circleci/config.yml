@@ -4,7 +4,7 @@ executors:
     environment:
       IMAGE_NAME: kesterriley/mdb-test-10-6-server
     docker:
-      - image: cimg/base
+      - image: cimg/base:2023.06
 jobs:
   build:
     executor: docker-publisher
