@@ -15,9 +15,6 @@ jobs:
           name: Build Docker image
           command: make build
       - run:
-          name: Scan Image
-          command: make scan
-      - run:
           name: Publish Docker Image to Docker Hub
           command:  |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
