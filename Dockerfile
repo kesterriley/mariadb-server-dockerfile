@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM rockylinux:8
 ENV MARIADB_SERVER_VERSION 10.6
 
 # Build-time metadata as defined at http://label-schema.org
