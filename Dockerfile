@@ -1,4 +1,4 @@
-FROM centos:centos8
+FROM centos:centos7
 ENV MARIADB_SERVER_VERSION 10.6
 
 # Build-time metadata as defined at http://label-schema.org
